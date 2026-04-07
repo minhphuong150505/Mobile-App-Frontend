@@ -1,74 +1,40 @@
-# Giao diện mua bán thiết bị nhiếp ảnh
+# Photography Equipment Rental & Marketplace (Mobile App)
 
-Dự án **Giao diện mua bán thiết bị nhiếp ảnh** (Photography Equipment Trading Platform) là một ứng dụng đa nền tảng, bao gồm cả nền tảng Web và thiết bị di động (Mobile). Dự án được thiết kế để cung cấp trải nghiệm mượt mà, hiện đại và tối ưu cho người dùng khi mua bán, trao đổi các thiết bị nhiếp ảnh.
+Ứng dụng di động mua bán và cho thuê thiết bị nhiếp ảnh cao cấp, được chuyển đổi từ phiên bản Web sang React Native bằng Expo và NativeWind.
 
-## 🛠 Công nghệ sử dụng
+## 📱 Công nghệ sử dụng
+- **React Native** (với nền tảng Expo): Giúp hỗ trợ chạy trên cả Android và iOS.
+- **Expo Router**: Tính năng định tuyến mới nhất của Expo, điều hướng dựa trên cấu trúc file (File-based Routing).
+- **NativeWind (Tailwind CSS)**: Hỗ trợ viết styling giao diện ngay trong component bằng các class của Tailwind CSS.
+- **Lucide React Native**: Cung cấp bộ thư viện biểu tượng dạng Vector SVG sắc nét, đồng bộ với bản Web.
 
-Dự án được chia làm hai phần chính với các công nghệ tương ứng:
+## 🚀 Hướng dẫn cài đặt và sử dụng
 
-### 1. Web Application (Thư mục gốc)
-- **Framework**: React 18 kết hợp với Vite.
-- **Styling**: Tailwind CSS (v4) để tăng tốc độ xây dựng giao diện.
-- **UI Components**: 
-  - [Radix UI](https://www.radix-ui.com/) cho các component cơ bản, đảm bảo khả năng truy cập (accessibility).
-  - Material UI (MUI) cho một số component nâng cao.
-- **Animation**: Framer Motion (`motion`).
-- **Khác**: React Router (Routing), Embla Carousel, Recharts (Biểu đồ), React Hook Form, ...
+### 1. Yêu cầu môi trường
+- Máy tính của bạn cần cài đặt **Node.js** (Khuyến nghị bản >= 18).
+- Cài phần mềm **Expo Go** trên điện thoại (tải từ App Store hoặc Google Play) để có thể scan mã QR chạy app thực tế.
 
-### 2. Mobile Application (Thư mục `/mobile`)
-- **Framework**: React Native và Expo.
-- **Styling**: NativeWind (sử dụng Tailwind CSS cho React Native).
-- Ứng dụng di động được chuyển đổi và đồng bộ thiết kế từ phiên bản Web.
-
----
-
-## 📂 Cấu trúc thư mục
-
-```text
-Frontend/
-├── src/                # Mã nguồn chính của phiên bản Web (Components, Pages, Assets,...)
-├── mobile/             # Mã nguồn của phiên bản Mobile App (React Native/Expo)
-├── guidelines/         # Các tài liệu hoặc hướng dẫn phát triển
-├── package.json        # Cấu hình dependencies cho Web
-├── vite.config.ts      # Cấu hình Vite
-└── README.md           # File giới thiệu dự án
+### 2. Cài đặt các thư viện
+Di chuyển vào vị trí thư mục `mobile` chứa bộ mã nguồn ứng dụng di động:
+```bash
+cd mobile
+npm install
 ```
 
----
+### 3. Chạy ứng dụng (Development Server)
+Sau khi cài đặt xong, hãy chạy lệnh dưới đây để bắt đầu server của Expo:
+```bash
+npm start
+```
 
-## 🚀 Hướng dẫn khởi chạy dự án
+### 4. Hiển thị ứng dụng:
+- **Ngay trên điện thoại thực**: Hãy lấy điện thoại mở app Expo Go và scan mã QR hiện ra trong màn hình Terminal. App sẽ tự động tải bundle về và hiển thị như một ứng dụng Native thực thụ!
+- **Trên máy ảo iOS/Android**: 
+  - Nếu bạn bấm phím `i` trong terminal, Expo sẽ chạy trên iOS Simulator (cần có macOS/xcode).
+  - Nếu bạn bấm phím `a` trong terminal, Expo sẽ khởi động Android Emulator (nếu đã bật Android Studio).
+- **Trên nền tảng Web**: Bấm `w` để build giao diện ra dạng web (dành cho browser).
 
-### Chạy phiên bản Web Application
-
-1. Mở terminal tại thư mục gốc của dự án (`Frontend/`).
-2. Cài đặt các gói phụ thuộc (dependencies):
-   ```bash
-   npm install
-   ```
-3. Khởi chạy server phát triển:
-   ```bash
-   npm run dev
-   ```
-4. Truy cập địa chỉ http://localhost:5173 (hoặc port được hiển thị trên terminal) để xem ứng dụng.
-
-### Chạy phiên bản Mobile Application
-
-1. Di chuyển vào thư mục `mobile`:
-   ```bash
-   cd mobile
-   ```
-2. Cài đặt các gói phụ thuộc:
-   ```bash
-   npm install
-   ```
-3. Khởi chạy server Expo:
-   ```bash
-   npx expo start
-   ```
-4. Sử dụng ứng dụng **Expo Go** trên điện thoại để quét mã QR (hoặc chạy trên các trình giả lập Android/iOS).
-
----
-
-## 🎨 Thiết kế gốc (Design)
-Bản thiết kế giao diện gốc trên Figma có thể được tham khảo tại:
-👉 [Giao diện mua bán thiết bị nhiếp ảnh - Figma](https://www.figma.com/design/zWRnV8ly0ogNpLNMXmGH9J/Giao-di%E1%BB%87n-mua-b%C3%A1n-thi%E1%BA%BFt-b%E1%BB%8B-nhi%E1%BA%BFp-%E1%BA%A3nh)
+## 💡 Cấu trúc dự án
+- `/app/(tabs)`: Chứa chức năng màn hình chính có Bottom Tabs (Khám phá, Giao dịch, Thông báo, Hồ sơ).
+- `/app/equipment/[id].tsx`: Màn hình riêng lẻ xem chi tiết một sản phẩm (Dynamic Route).
+- `tailwind.config.js` & `babel.config.js`: Được thiết lập để render NativeWind ngay bên trong React Native.
