@@ -1,26 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Package, Bell, AlertCircle, CheckCircle, TrendingUp } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 
 export default function NotificationsScreen() {
-  const notifications = [
+  const router = useRouter();
+  const [notifications, setNotifications] = useState([
     {
       id: 1,
       type: "order",
       icon: Package,
       title: "Order Delivered",
-      message: "Your order ORD-2024-001 has been delivered successfully",
+      message: "Your order has been delivered successfully",
       time: "2 hours ago",
       read: false,
+      link: "/orders/o1" 
     },
     {
       id: 2,
       type: "rental",
       icon: AlertCircle,
       title: "Rental Reminder",
-      message: "Your rental for Leica M11 ends in 2 days. Return by Apr 5, 2026",
+      message: "Your rental ends in 2 days. Return by Apr 5, 2026",
       time: "5 hours ago",
       read: false,
+      link: "/rentals/detail/r1"
     },
     {
       id: 3,
@@ -30,6 +34,7 @@ export default function NotificationsScreen() {
       message: "Check out the latest Hasselblad cameras now available",
       time: "1 day ago",
       read: false,
+      link: "/store"
     },
     {
       id: 4,
@@ -39,6 +44,7 @@ export default function NotificationsScreen() {
       message: "Payment for Sony A7 III has been confirmed",
       time: "2 days ago",
       read: true,
+      link: null
     },
     {
       id: 5,
@@ -48,26 +54,24 @@ export default function NotificationsScreen() {
       message: "Summer sale now live! Up to 30% off on selected items",
       time: "3 days ago",
       read: true,
-    },
-    {
-      id: 6,
-      type: "rental",
-      icon: CheckCircle,
-      title: "Rental Completed",
-      message: "Thank you for returning Hasselblad X2D on time",
-      time: "5 days ago",
-      read: true,
-    },
-    {
-      id: 7,
-      type: "order",
-      icon: Package,
-      title: "Order Shipped",
-      message: "Your order ORD-2024-002 is on the way",
-      time: "1 week ago",
-      read: true,
-    },
-  ];
+      link: "/store"
+    }
+  ]);
+
+  const markAsRead = (id: number) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const handlePress = (notif: typeof notifications[0]) => {
+     if (!notif.read) markAsRead(notif.id);
+     if (notif.link) {
+        router.push(notif.link as any);
+     }
+  };
 
   const getTypeStyle = (type: string) => {
     switch (type) {
@@ -107,11 +111,12 @@ export default function NotificationsScreen() {
             const style = getTypeStyle(notification.type);
 
             return (
-              <View
+              <TouchableOpacity
                 key={notification.id}
+                onPress={() => handlePress(notification)}
                 className={`bg-[#0a0a0a] border rounded-3xl p-4 mb-3 transition-all ${notification.read
-                    ? "border-gray-800"
-                    : "border-gray-700"
+                    ? "border-gray-800 opacity-70"
+                    : "border-gray-600"
                   }`}
               >
                 <View className="flex-row gap-4">
@@ -133,30 +138,25 @@ export default function NotificationsScreen() {
                       )}
                     </View>
                     <Text
-                      className={`text-sm mb-2 leading-relaxed ${notification.read ? "text-gray-600" : "text-gray-400"
+                      className={`text-sm mb-2 leading-relaxed ${notification.read ? "text-gray-600" : "text-gray-300"
                         }`}
                     >
                       {notification.message}
                     </Text>
                     <View className="flex-row items-center justify-between">
                       <Text className="text-xs text-gray-600">{notification.time}</Text>
-                      {!notification.read && (
-                        <TouchableOpacity>
-                          <Text className="text-xs text-[#FF8C42]">Mark as read</Text>
-                        </TouchableOpacity>
-                      )}
                     </View>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })}
 
           {/* Mark all as read */}
           {unreadCount > 0 && (
             <View className="mt-4 pb-4 items-center">
-              <TouchableOpacity>
-                <Text className="text-sm text-gray-400 font-medium">Mark all as read</Text>
+              <TouchableOpacity onPress={markAllAsRead}>
+                <Text className="text-sm text-gray-400 font-medium bg-[#0a0a0a] px-4 py-2 rounded-full border border-gray-800">Mark all as read</Text>
               </TouchableOpacity>
             </View>
           )}

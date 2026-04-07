@@ -14,30 +14,46 @@ import {
   Camera,
   Award,
 } from 'lucide-react-native';
+import { useAuth } from '@/context/AuthContext';
+import { Link, useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
+  const { user, logout, favorites } = useAuth();
+  const router = useRouter();
+
+  if (!user) {
+    return (
+      <View className="flex-1 bg-[#1a1a1a] items-center justify-center p-6">
+        <Text className="text-2xl text-white font-bold mb-4">You are not signed in</Text>
+        <Text className="text-gray-400 text-center mb-8">Sign in to view your profile, orders, and manage your account.</Text>
+        <Link href="/(auth)/login" asChild>
+          <TouchableOpacity className="w-full bg-[#FF8C42] py-4 rounded-full items-center">
+            <Text className="text-black font-bold">Sign In</Text>
+          </TouchableOpacity>
+        </Link>
+      </View>
+    );
+  }
+
   const stats = [
-    { label: "Orders", value: "12", icon: Package },
-    { label: "Rentals", value: "8", icon: Camera },
-    { label: "Rating", value: "4.9", icon: Star },
+    { label: "Orders", value: "0", icon: Package },
+    { label: "Rentals", value: "1", icon: Camera },
+    { label: "Rating", value: user.trustScore.toString(), icon: Star },
   ];
 
   const menuItems = [
     {
       section: "Account",
       items: [
-        { icon: User, label: "Personal Information", path: "/profile/info" },
-        { icon: Heart, label: "Favorites", path: "/profile/favorites", badge: "8" },
+        { icon: User, label: "Personal Information", path: "/profile/personal-info" },
+        { icon: Heart, label: "Favorites", path: "/profile/favorites", badge: favorites.length.toString() },
         { icon: Award, label: "My Equipment", path: "/profile/my-equipment" },
       ],
     },
     {
       section: "Settings",
       items: [
-        { icon: Settings, label: "Account Settings", path: "/settings/account" },
-        { icon: Bell, label: "Notifications", path: "/settings/notifications", badge: "3" },
-        { icon: Shield, label: "Privacy & Security", path: "/settings/security" },
-        { icon: HelpCircle, label: "Help & Support", path: "/help" },
+        { icon: Settings, label: "Account Settings", path: "/profile/settings" },
       ],
     },
   ];
@@ -51,9 +67,9 @@ export default function ProfileScreen() {
             <Text className="text-3xl">👤</Text>
           </View>
           <View className="flex-1">
-            <Text className="text-2xl mb-1 tracking-tight text-white font-bold">Nguyễn Văn A</Text>
-            <Text className="text-sm opacity-90 text-white">nguyenvana@email.com</Text>
-            <Text className="text-xs opacity-75 mt-1 text-white">Member since 2024</Text>
+            <Text className="text-2xl mb-1 tracking-tight text-white font-bold">{user.userName}</Text>
+            <Text className="text-sm opacity-90 text-white">{user.email}</Text>
+            <Text className="text-xs opacity-75 mt-1 text-white">Trust Score: {user.trustScore}</Text>
           </View>
         </View>
 
@@ -88,6 +104,7 @@ export default function ProfileScreen() {
                 return (
                   <TouchableOpacity
                     key={item.path}
+                    onPress={() => router.push(item.path as any)}
                     className={`w-full flex-row items-center gap-4 px-5 py-4 ${
                       index !== section.items.length - 1 ? "border-b border-gray-800" : ""
                     }`}
@@ -96,7 +113,7 @@ export default function ProfileScreen() {
                       <Icon size={20} color="#9ca3af" />
                     </View>
                     <Text className="flex-1 text-left text-sm text-white font-medium">{item.label}</Text>
-                    {item.badge && (
+                    {item.badge && item.badge !== '0' && (
                       <View className="bg-[#FF8C42] px-2 py-0.5 rounded-full items-center justify-center">
                         <Text className="text-black text-xs font-semibold">{item.badge}</Text>
                       </View>
@@ -111,7 +128,13 @@ export default function ProfileScreen() {
 
         {/* Logout Button */}
         <View className="pt-2">
-          <TouchableOpacity className="w-full bg-[#0a0a0a] border border-gray-800 rounded-3xl px-5 py-4 flex-row items-center gap-4 mb-8">
+          <TouchableOpacity 
+            onPress={() => {
+              logout();
+              router.replace('/');
+            }}
+            className="w-full bg-[#0a0a0a] border border-gray-800 rounded-3xl px-5 py-4 flex-row items-center gap-4 mb-8"
+          >
             <View className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
               <LogOut size={20} color="#ef4444" />
             </View>
@@ -120,10 +143,6 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Version */}
-        <Text className="text-center text-xs text-gray-600 pb-12">
-          Version 1.0.0
-        </Text>
       </View>
     </ScrollView>
   );
