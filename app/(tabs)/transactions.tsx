@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { Package, Clock, CheckCircle, XCircle, Calendar } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 
 export default function TransactionsScreen() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"orders" | "rentals">("orders");
 
   const orders = [
@@ -146,8 +148,9 @@ export default function TransactionsScreen() {
             {orders.map((order) => {
               const statusStyle = getStatusStyle(order.status);
               return (
-                <View
+                <TouchableOpacity
                   key={order.id}
+                  onPress={() => router.push(`/orders/${order.id}` as any)}
                   className="bg-[#0a0a0a] border border-gray-800 rounded-3xl overflow-hidden mb-4"
                 >
                   <View className="flex-row gap-4 p-4">
@@ -177,7 +180,7 @@ export default function TransactionsScreen() {
                       <Text className="text-[#FF8C42] text-lg font-bold">₫{order.price}</Text>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>
@@ -186,8 +189,9 @@ export default function TransactionsScreen() {
             {rentals.map((rental) => {
               const statusStyle = getStatusStyle(rental.status);
               return (
-                <View
+                <TouchableOpacity
                   key={rental.id}
+                  onPress={() => router.push(`/rentals/detail/${rental.id}` as any)}
                   className="bg-[#0a0a0a] border border-gray-800 rounded-3xl overflow-hidden mb-4"
                 >
                   <View className="flex-row gap-4 p-4">
@@ -228,7 +232,7 @@ export default function TransactionsScreen() {
                       <Text className="text-[#FF8C42] text-lg font-bold">₫{rental.total}</Text>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>

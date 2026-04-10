@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Image } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
@@ -18,6 +18,16 @@ export default function PersonalInfoScreen() {
       </View>
 
       <View className="p-6 space-y-4 shadow">
+        <View className="items-center mb-4 mt-2">
+            <View className="w-24 h-24 rounded-full bg-black/20 border-2 border-gray-800 items-center justify-center overflow-hidden mb-3">
+              {user?.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} className="w-full h-full" />
+              ) : (
+                <Text className="text-4xl text-white">👤</Text>
+              )}
+            </View>
+        </View>
+
         <View className="mb-4">
           <Text className="text-sm text-gray-400 mb-2">Username</Text>
           <TextInput 

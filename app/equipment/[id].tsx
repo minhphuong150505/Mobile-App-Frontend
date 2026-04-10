@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
-import { ArrowLeft, Heart, Share2, Star, Shield, CheckCircle } from 'lucide-react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
+import { ArrowLeft, Heart, Share2, Star, Shield, CheckCircle, Plus, Minus } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PRODUCTS, ASSETS, CATEGORIES, getPrimaryImage } from '@/constants/mockData';
 import { useAuth } from '@/context/AuthContext';
@@ -8,9 +8,10 @@ import { useAuth } from '@/context/AuthContext';
 export default function EquipmentDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { user, favorites, toggleFavorite } = useAuth();
+  const { user, favorites, toggleFavorite, addToCart } = useAuth();
   
   const stringId = typeof id === 'string' ? id : Array.isArray(id) ? id[0] : '';
+  const [quantity, setQuantity] = useState(1);
   
   const equipment = useMemo(() => {
     const productMatch = PRODUCTS.find(p => p.productId === stringId);
@@ -147,19 +148,63 @@ export default function EquipmentDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* Bottom Actions */}
-      <View className="absolute bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-gray-800 px-6 pt-4 pb-8 flex-row gap-3">
-        <TouchableOpacity className="flex-1 py-4 bg-gray-900 border border-gray-800 rounded-2xl items-center justify-center">
-          <Text className="text-white font-semibold">Contact Store</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          className={`flex-1 py-4 rounded-2xl items-center justify-center ${equipment.type === 'ASSET' && equipment.status !== 'AVAILABLE' ? 'bg-gray-600' : 'bg-[#FF8C42]'}`}
-          disabled={equipment.type === 'ASSET' && equipment.status !== 'AVAILABLE'}
-        >
-          <Text className={`${equipment.type === 'ASSET' && equipment.status !== 'AVAILABLE' ? 'text-gray-400' : 'text-black'} font-bold`}>
-            {equipment.type === 'PRODUCT' ? 'Buy Now' : 'Rent Now'}
-          </Text>
-        </TouchableOpacity>
+      {/* Bottom Actions with Quantity Selector */}
+      <View className="absolute bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-gray-800 px-6 pt-4 pb-8">
+        {equipment.type === 'PRODUCT' && (
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-white font-semibold flex-1">Quantity</Text>
+            <View className="flex-row items-center bg-[#1a1a1a] rounded-full border border-gray-800 w-32">
+              <TouchableOpacity 
+                className="w-10 h-10 items-center justify-center rounded-l-full"
+                onPress={() => setQuantity(prev => Math.max(1, prev - 1))}
+              >
+                <Minus size={16} color="white" />
+              </TouchableOpacity>
+              <Text className="text-white font-semibold flex-1 text-center min-w-[24px]">
+                {quantity}
+              </Text>
+              <TouchableOpacity 
+                className="w-10 h-10 items-center justify-center rounded-r-full"
+                onPress={() => setQuantity(prev => prev + 1)}
+              >
+                <Plus size={16} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        
+        <View className="flex-row gap-3">
+          <TouchableOpacity 
+            onPress={() => {
+              if(!user) {
+                 router.push('/(auth)/login' as any);
+                 return;
+              }
+              addToCart(equipment.id, equipment.type, equipment.type === 'PRODUCT' ? quantity : 1);
+              router.back();
+              Alert.alert("Success", `${equipment.title} has been added to your cart.`);
+            }}
+            className="flex-1 py-4 bg-gray-900 border border-gray-800 rounded-2xl items-center justify-center"
+          >
+            <Text className="text-white font-semibold flex-row">Add to Cart</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            className={`flex-1 py-4 rounded-2xl items-center justify-center ${equipment.type === 'ASSET' && equipment.status !== 'AVAILABLE' ? 'bg-gray-600' : 'bg-[#FF8C42]'}`}
+            disabled={equipment.type === 'ASSET' && equipment.status !== 'AVAILABLE'}
+            onPress={() => {
+              if(!user) {
+                 router.push('/(auth)/login' as any);
+                 return;
+              }
+              addToCart(equipment.id, equipment.type, equipment.type === 'PRODUCT' ? quantity : 1);
+              router.push('/cart' as any);
+            }}
+          >
+            <Text className={`${equipment.type === 'ASSET' && equipment.status !== 'AVAILABLE' ? 'text-gray-400' : 'text-black'} font-bold`}>
+              {equipment.type === 'PRODUCT' ? 'Buy Now' : 'Rent Now'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );

@@ -7,10 +7,13 @@ import { CATEGORIES, PRODUCTS, ASSETS, getPrimaryImage } from '@/constants/mockD
 
 export default function DiscoveryScreen() {
   const router = useRouter();
-  const { user, favorites, toggleFavorite } = useAuth();
+  const { user, favorites, toggleFavorite, cartItems } = useAuth();
+  
+  const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [shopMode, setShopMode] = useState<'BUY' | 'RENT'>('BUY');
 
   // Combine Products and Assets for the Featured view natively
   const allItems = useMemo(() => {
@@ -36,11 +39,12 @@ export default function DiscoveryScreen() {
 
   const filteredItems = useMemo(() => {
     return allItems.filter(item => {
+      const matchesType = shopMode === 'BUY' ? item.type === 'PRODUCT' : item.type === 'ASSET';
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory ? CATEGORIES.find(c => c.categoryId === item.categoryId)?.categoryId === selectedCategory : true;
-      return matchesSearch && matchesCategory;
+      return matchesType && matchesSearch && matchesCategory;
     });
-  }, [searchQuery, selectedCategory, allItems]);
+  }, [searchQuery, selectedCategory, allItems, shopMode]);
 
   return (
     <ScrollView className="flex-1 bg-[#1a1a1a]">
@@ -52,8 +56,16 @@ export default function DiscoveryScreen() {
             <Text className="text-sm text-gray-400">Welcome, {user ? user.userName : 'Guest'}!</Text>
           </View>
           {user ? (
-            <TouchableOpacity className="w-10 h-10 bg-[#0a0a0a] rounded-full flex items-center justify-center border border-gray-800">
+            <TouchableOpacity 
+              onPress={() => router.push('/cart' as any)}
+              className="w-10 h-10 bg-[#0a0a0a] rounded-full flex items-center justify-center border border-gray-800 relative"
+            >
               <ShoppingCart size={20} color="#9ca3af" />
+              {cartItemCount > 0 && (
+                <View className="absolute -top-1 -right-1 bg-red-500 w-4 h-4 rounded-full items-center justify-center">
+                  <Text className="text-[10px] text-white font-bold">{cartItemCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           ) : (
             <Link href={"/(auth)/login" as any} asChild>
@@ -77,6 +89,22 @@ export default function DiscoveryScreen() {
             className="pl-11 pr-4 py-4 bg-[#0a0a0a] border border-gray-800 rounded-2xl text-white"
           />
         </View>
+
+        {/* Buy/Rent Toggle */}
+        <View className="flex-row mt-6 bg-[#0a0a0a] border border-gray-800 p-1 rounded-2xl">
+           <TouchableOpacity 
+             onPress={() => { setShopMode('BUY'); setSelectedCategory(null); }}
+             className={`flex-1 py-3 rounded-xl items-center ${shopMode === 'BUY' ? 'bg-[#FF8C42]' : ''}`}
+           >
+             <Text className={`font-semibold ${shopMode === 'BUY' ? 'text-black' : 'text-gray-500'}`}>Mua thiết bị</Text>
+           </TouchableOpacity>
+           <TouchableOpacity 
+             onPress={() => { setShopMode('RENT'); setSelectedCategory(null); }}
+             className={`flex-1 py-3 rounded-xl items-center ${shopMode === 'RENT' ? 'bg-[#FF8C42]' : ''}`}
+           >
+             <Text className={`font-semibold ${shopMode === 'RENT' ? 'text-black' : 'text-gray-500'}`}>Thuê thiết bị</Text>
+           </TouchableOpacity>
+        </View>
       </View>
 
       {/* Categories Filter */}
@@ -89,7 +117,7 @@ export default function DiscoveryScreen() {
             <Text className={`text-sm ${selectedCategory === null ? 'text-black font-bold' : 'text-white'}`}>All</Text>
           </TouchableOpacity>
           
-          {CATEGORIES.map((category) => (
+          {CATEGORIES.filter(c => c.type === (shopMode === 'BUY' ? 'PRODUCT' : 'ASSET')).map((category) => (
             <TouchableOpacity
               key={category.categoryId}
               onPress={() => setSelectedCategory(category.categoryId)}

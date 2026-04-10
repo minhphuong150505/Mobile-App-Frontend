@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { ArrowLeft, Calendar, Camera, CreditCard, ShieldAlert } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { RENTALS, ASSETS, getPrimaryImage } from '@/constants/mockData';
@@ -90,6 +90,25 @@ export default function RentalDetailScreen() {
            </View>
         </View>
       </ScrollView>
+
+      {/* Bottom Actions */}
+      <View className="absolute bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-gray-800 px-6 pt-4 pb-8">
+        <TouchableOpacity 
+          onPress={() => {
+             Alert.alert(
+               "Extend Rental", 
+               "Would you like to extend your rental period for another day? Additional fees will apply.",
+               [
+                 { text: "Cancel", style: "cancel" },
+                 { text: "Confirm Request", onPress: () => Alert.alert("Success", "Extension requested. Pending approval from shop.")}
+               ]
+             );
+          }}
+          className="w-full bg-[#FF8C42] py-4 rounded-2xl items-center shadow shadow-orange-500/20"
+        >
+          <Text className="text-black font-bold text-lg">Extend Rental</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

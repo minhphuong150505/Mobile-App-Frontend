@@ -3,9 +3,13 @@ import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { ArrowLeft, ShoppingCart } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { PRODUCTS, CATEGORIES, getPrimaryImage } from '@/constants/mockData';
+import { useAuth } from '@/context/AuthContext';
 
 export default function StoreScreen() {
   const router = useRouter();
+  const { cartItems, user } = useAuth();
+  
+  const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <View className="flex-1 bg-[#1a1a1a]">
@@ -14,7 +18,23 @@ export default function StoreScreen() {
           <ArrowLeft color="white" size={24} />
         </TouchableOpacity>
         <Text className="text-xl text-white font-bold flex-1">Shop Equipment</Text>
-        <ShoppingCart color="white" size={24} />
+        <TouchableOpacity 
+          onPress={() => {
+             if (!user) {
+               router.push('/(auth)/login' as any);
+             } else {
+               router.push('/cart' as any);
+             }
+          }}
+          className="relative"
+        >
+           <ShoppingCart color="white" size={24} />
+           {cartItemCount > 0 && user && (
+              <View className="absolute -top-2 -right-2 bg-red-500 w-4 h-4 rounded-full items-center justify-center">
+                <Text className="text-[10px] text-white font-bold">{cartItemCount}</Text>
+              </View>
+            )}
+        </TouchableOpacity>
       </View>
 
       <ScrollView className="p-6">

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { ArrowLeft, Package, MapPin, Calendar, Clock } from 'lucide-react-native';
+import { ArrowLeft, Package, MapPin, Calendar, Clock, Truck, CheckCircle } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ORDERS } from '@/constants/mockData';
 
@@ -21,6 +21,21 @@ export default function OrderDetailScreen() {
       </View>
     );
   }
+
+  const steps = [
+    { id: 1, title: 'Order Placed', desc: 'We have received your order', icon: Clock, stepIndex: 0 },
+    { id: 2, title: 'Processing', desc: 'Your items are being packed', icon: Package, stepIndex: 1 },
+    { id: 3, title: 'Shipped', desc: 'Your order is on the way', icon: Truck, stepIndex: 2 },
+    { id: 4, title: 'Delivered', desc: 'The order has been handed to you', icon: CheckCircle, stepIndex: 3 },
+  ];
+
+  const isStepCompleted = (stepIndex: number) => {
+    if (order.status === 'DELIVERED') return true;
+    if (order.status === 'SHIPPED' && stepIndex <= 2) return true;
+    if (order.status === 'PENDING' && stepIndex <= 1) return true;
+    if (stepIndex === 0) return true;
+    return false;
+  };
 
   return (
     <View className="flex-1 bg-[#1a1a1a]">
@@ -67,6 +82,32 @@ export default function OrderDetailScreen() {
           <View className="flex-row items-start">
              <MapPin color="#FF8C42" size={20} className="mr-3" />
              <Text className="text-gray-300 flex-1 leading-relaxed">{order.shippingAddress}</Text>
+          </View>
+        </View>
+
+        <View className="bg-[#0a0a0a] border border-gray-800 rounded-2xl p-5 mb-8">
+          <Text className="text-white font-bold mb-6">Delivery Tracking</Text>
+          <View className="space-y-0">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isLast = index === steps.length - 1;
+              const completed = isStepCompleted(step.stepIndex);
+              
+              return (
+                <View key={step.id} className="flex-row items-start relative opacity-100">
+                   {!isLast && (
+                      <View className={`absolute left-5 top-10 bottom-[-20px] w-0.5 ${completed ? 'bg-[#FF8C42]' : 'bg-gray-800'}`} />
+                   )}
+                   <View className={`w-10 h-10 rounded-full items-center justify-center z-10 ${completed ? 'bg-[#FF8C42]' : 'bg-gray-800'}`}>
+                      <Icon size={18} color={completed ? 'black' : '#9ca3af'} />
+                   </View>
+                   <View className="ml-4 pb-10 flex-1">
+                      <Text className={`font-bold ${completed ? 'text-white' : 'text-gray-500'}`}>{step.title}</Text>
+                      <Text className={`${completed ? 'text-gray-400' : 'text-gray-600'} text-xs mt-1`}>{step.desc}</Text>
+                   </View>
+                </View>
+              );
+            })}
           </View>
         </View>
       </ScrollView>

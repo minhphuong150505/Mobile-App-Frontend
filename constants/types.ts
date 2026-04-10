@@ -3,6 +3,7 @@ export interface User {
   userName: string;
   email: string;
   password?: string; // Bỏ qua mật khẩu thực khi return
+  avatarUrl?: string;
   role: 'user' | 'admin';
   trustScore: number;
 }
@@ -68,6 +69,12 @@ export interface Cart {
   userId: string;
   productId: string;
   quantity: number;
+}
+
+export interface CartContextItem {
+  id: string; // entity ID (productId or assetId)
+  quantity: number;
+  type: 'PRODUCT' | 'ASSET';
 }
 
 export interface Review {

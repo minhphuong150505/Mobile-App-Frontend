@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import {
   User,
   Heart,
@@ -13,13 +13,29 @@ import {
   Star,
   Camera,
   Award,
+  Lock,
 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/context/AuthContext';
 import { Link, useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
-  const { user, logout, favorites } = useAuth();
+  const { user, logout, favorites, updateAvatar } = useAuth();
   const router = useRouter();
+
+  const pickImage = async () => {
+    // No permissions request is necessary for launching the image library
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      updateAvatar(result.assets[0].uri);
+    }
+  };
 
   if (!user) {
     return (
@@ -54,6 +70,7 @@ export default function ProfileScreen() {
       section: "Settings",
       items: [
         { icon: Settings, label: "Account Settings", path: "/profile/settings" },
+        { icon: Lock, label: "Change Password", path: "/profile/change-password" },
       ],
     },
   ];
@@ -63,9 +80,18 @@ export default function ProfileScreen() {
       {/* Header */}
       <View className="bg-[#FF8C42] px-6 pt-12 pb-8">
         <View className="flex-row items-center gap-4 mb-6">
-          <View className="w-20 h-20 rounded-full bg-black/20 border-2 border-white/20 items-center justify-center">
-            <Text className="text-3xl">👤</Text>
-          </View>
+          <TouchableOpacity onPress={pickImage} className="relative">
+            <View className="w-20 h-20 rounded-full bg-black/20 border-2 border-white/20 items-center justify-center overflow-hidden">
+              {user.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} className="w-full h-full" />
+              ) : (
+                <Text className="text-3xl">👤</Text>
+              )}
+            </View>
+            <View className="absolute bottom-0 right-0 bg-[#0a0a0a] rounded-full p-1.5 border border-gray-800">
+              <Camera size={14} color="#FF8C42" />
+            </View>
+          </TouchableOpacity>
           <View className="flex-1">
             <Text className="text-2xl mb-1 tracking-tight text-white font-bold">{user.userName}</Text>
             <Text className="text-sm opacity-90 text-white">{user.email}</Text>
