@@ -1,15 +1,55 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { ArrowLeft, ShoppingCart } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { PRODUCTS, CATEGORIES, getPrimaryImage } from '@/constants/mockData';
 import { useAuth } from '@/context/AuthContext';
+import { productApi, Product } from '@/services/api/productApi';
 
 export default function StoreScreen() {
   const router = useRouter();
   const { cartItems, user } = useAuth();
-  
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await productApi.getAllProducts(0, 100);
+      setProducts(data.content);
+    } catch (e: any) {
+      setError(e.message || 'Failed to load products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-[#1a1a1a] items-center justify-center">
+        <ActivityIndicator size="large" color="#FF8C42" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 bg-[#1a1a1a] items-center justify-center p-6">
+        <Text className="text-red-500 mb-4">{error}</Text>
+        <TouchableOpacity onPress={loadProducts} className="bg-[#FF8C42] px-6 py-3 rounded-full">
+          <Text className="text-black font-bold">Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-[#1a1a1a]">
@@ -18,7 +58,7 @@ export default function StoreScreen() {
           <ArrowLeft color="white" size={24} />
         </TouchableOpacity>
         <Text className="text-xl text-white font-bold flex-1">Shop Equipment</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => {
              if (!user) {
                router.push('/(auth)/login' as any);
@@ -39,21 +79,20 @@ export default function StoreScreen() {
 
       <ScrollView className="p-6">
         <View className="flex-row flex-wrap justify-between">
-          {PRODUCTS.map(product => {
-            const categoryName = CATEGORIES.find(c => c.categoryId === product.categoryId)?.categoryName;
+          {products.map(product => {
             return (
-              <TouchableOpacity 
-                key={product.productId} 
+              <TouchableOpacity
+                key={product.productId}
                 onPress={() => router.push(`/equipment/${product.productId}` as any)}
                 className="w-[48%] mb-6 bg-[#0a0a0a] rounded-2xl border border-gray-800 overflow-hidden"
               >
-                <Image 
-                  source={{ uri: getPrimaryImage(product.productId, 'PRODUCT') }} 
-                  className="w-full h-32" 
+                <Image
+                  source={{ uri: product.primaryImageUrl }}
+                  className="w-full h-32"
                   resizeMode="cover"
                 />
                 <View className="p-3">
-                  <Text className="text-[10px] text-gray-500 uppercase mb-1">{categoryName}</Text>
+                  <Text className="text-[10px] text-gray-500 uppercase mb-1">{product.categoryName}</Text>
                   <Text className="text-white font-bold mb-2" numberOfLines={1}>{product.productName}</Text>
                   <Text className="text-[#FF8C42] font-semibold">₫{product.price.toLocaleString()}</Text>
                   <Text className="text-xs text-gray-400 mt-1">Stock: {product.stockQuantity}</Text>

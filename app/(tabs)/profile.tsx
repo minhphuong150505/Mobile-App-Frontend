@@ -5,15 +5,12 @@ import {
   Heart,
   Package,
   Settings,
-  Bell,
-  HelpCircle,
-  Shield,
+  Camera,
+  Star,
   LogOut,
   ChevronRight,
-  Star,
-  Camera,
-  Award,
   Lock,
+  Bell,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/context/AuthContext';
@@ -24,16 +21,27 @@ export default function ProfileScreen() {
   const router = useRouter();
 
   const pickImage = async () => {
-    // No permissions request is necessary for launching the image library
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert('Permission Required', 'Permission to access camera roll is required!');
+      return;
+    }
+
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 1,
+      quality: 0.5,
     });
 
-    if (!result.canceled) {
-      updateAvatar(result.assets[0].uri);
+    if (!result.canceled && result.assets[0].uri) {
+      try {
+        await updateAvatar(result.assets[0].uri);
+        Alert.alert('Success', 'Avatar updated successfully!');
+      } catch (e: any) {
+        Alert.alert('Error', e.message || 'Failed to update avatar');
+      }
     }
   };
 
@@ -63,7 +71,8 @@ export default function ProfileScreen() {
       items: [
         { icon: User, label: "Personal Information", path: "/profile/personal-info" },
         { icon: Heart, label: "Favorites", path: "/profile/favorites", badge: favorites.length.toString() },
-        { icon: Award, label: "My Equipment", path: "/profile/my-equipment" },
+        { icon: Package, label: "My Equipment", path: "/profile/my-equipment" },
+        { icon: Bell, label: "Notifications", path: "/notifications" },
       ],
     },
     {
@@ -154,7 +163,7 @@ export default function ProfileScreen() {
 
         {/* Logout Button */}
         <View className="pt-2">
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => {
               logout();
               router.replace('/');

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { ArrowLeft } from 'lucide-react-native';
@@ -8,21 +8,25 @@ export default function SignupScreen() {
   const [userName, setUserName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { signup } = useAuth();
+  const { signup, isLoading, error } = useAuth();
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!userName || !email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      alert('Please fill in all fields');
       return;
     }
 
-    const success = signup(email, password, userName);
+    setIsSubmitting(true);
+    const success = await signup(email, password, userName);
+    setIsSubmitting(false);
+
     if (success) {
-      Alert.alert('Success', 'Account created successfully!');
+      alert('Account created successfully!');
       router.replace('/(tabs)');
     } else {
-      Alert.alert('Error', 'Email is already registered');
+      alert(error || 'Email is already registered');
     }
   };
 
@@ -61,11 +65,16 @@ export default function SignupScreen() {
           className="bg-[#0a0a0a] text-white p-4 rounded-xl border border-gray-800 mb-6"
         />
 
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={handleSignup}
-          className="bg-[#FF8C42] py-4 rounded-xl items-center"
+          disabled={isSubmitting || isLoading}
+          className="bg-[#FF8C42] py-4 rounded-xl items-center disabled:opacity-50"
         >
-          <Text className="text-black font-bold text-base">Sign Up</Text>
+          {isSubmitting || isLoading ? (
+            <ActivityIndicator color="black" />
+          ) : (
+            <Text className="text-black font-bold text-base">Sign Up</Text>
+          )}
         </TouchableOpacity>
       </View>
 

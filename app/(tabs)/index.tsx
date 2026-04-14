@@ -1,50 +1,116 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
+import React, { useEffect, useState, useMemo } from 'react';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { Search, Heart, ShoppingCart } from 'lucide-react-native';
 import { Link, useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
-import { CATEGORIES, PRODUCTS, ASSETS, getPrimaryImage } from '@/constants/mockData';
+import { productApi, assetApi, Product, Asset, Category } from '@/services/api/productApi';
+
+interface DisplayItem {
+  id: string;
+  title: string;
+  price: number;
+  type: 'PRODUCT' | 'ASSET';
+  categoryName: string;
+  primaryImageUrl: string;
+}
 
 export default function DiscoveryScreen() {
   const router = useRouter();
-  const { user, favorites, toggleFavorite, cartItems } = useAuth();
-  
+  const { user, favorites, toggleFavorite, cartItems, loadFavorites } = useAuth();
+
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [shopMode, setShopMode] = useState<'BUY' | 'RENT'>('BUY');
 
-  // Combine Products and Assets for the Featured view natively
-  const allItems = useMemo(() => {
-    const pItems = PRODUCTS.map(p => ({
-      ...p,
-      id: p.productId,
-      title: p.productName,
-      type: 'PRODUCT' as const,
-      categoryName: CATEGORIES.find(c => c.categoryId === p.categoryId)?.categoryName || '',
-    }));
-    
-    const aItems = ASSETS.map(a => ({
-      ...a,
-      id: a.assetId,
-      title: a.modelName,
-      price: a.dailyRate, // Use daily rate as display price
-      type: 'ASSET' as const,
-      categoryName: CATEGORIES.find(c => c.categoryId === a.categoryId)?.categoryName || '',
-    }));
+  // State
+  const [allItems, setAllItems] = useState<DisplayItem[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    return [...pItems, ...aItems];
-  }, []);
+  // Load data
+  useEffect(() => {
+    loadData();
+  }, [shopMode]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Load categories - map shopMode to backend type
+      const backendType = shopMode === 'BUY' ? 'PRODUCT' : 'ASSET';
+      const cats = await productApi.getCategoriesByType(backendType);
+      setCategories(cats);
+
+      // Load products or assets
+      if (shopMode === 'BUY') {
+        const productsData = await productApi.getAllProducts(0, 100);
+        const items: DisplayItem[] = productsData.content.map(p => ({
+          id: p.productId,
+          title: p.productName,
+          price: p.price,
+          type: 'PRODUCT' as const,
+          categoryName: p.categoryName,
+          primaryImageUrl: p.primaryImageUrl,
+        }));
+        setAllItems(items);
+      } else {
+        const assetsData = await assetApi.getAllAssets(0, 100);
+        const items: DisplayItem[] = assetsData.content.map(a => ({
+          id: a.assetId,
+          title: a.modelName,
+          price: a.dailyRate,
+          type: 'ASSET' as const,
+          categoryName: a.categoryName,
+          primaryImageUrl: a.primaryImageUrl,
+        }));
+        setAllItems(items);
+      }
+    } catch (e: any) {
+      setError(e.message || 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredItems = useMemo(() => {
     return allItems.filter(item => {
-      const matchesType = shopMode === 'BUY' ? item.type === 'PRODUCT' : item.type === 'ASSET';
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory ? CATEGORIES.find(c => c.categoryId === item.categoryId)?.categoryId === selectedCategory : true;
-      return matchesType && matchesSearch && matchesCategory;
+      const matchesCategory = selectedCategory ? item.categoryName === selectedCategory : true;
+      return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, selectedCategory, allItems, shopMode]);
+  }, [searchQuery, selectedCategory, allItems]);
+
+  const handleToggleFavorite = async (id: string) => {
+    if (!user) {
+      router.push('/(auth)/login' as any);
+      return;
+    }
+    await toggleFavorite(id, shopMode === 'BUY' ? 'PRODUCT' : 'ASSET');
+  };
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-[#1a1a1a] items-center justify-center">
+        <ActivityIndicator size="large" color="#FF8C42" />
+        <Text className="text-gray-400 mt-4">Loading...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 bg-[#1a1a1a] items-center justify-center p-6">
+        <Text className="text-red-500 mb-4">{error}</Text>
+        <TouchableOpacity onPress={loadData} className="bg-[#FF8C42] px-6 py-3 rounded-full">
+          <Text className="text-black font-bold">Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <ScrollView className="flex-1 bg-[#1a1a1a]">
@@ -56,7 +122,7 @@ export default function DiscoveryScreen() {
             <Text className="text-sm text-gray-400">Welcome, {user ? user.userName : 'Guest'}!</Text>
           </View>
           {user ? (
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => router.push('/cart' as any)}
               className="w-10 h-10 bg-[#0a0a0a] rounded-full flex items-center justify-center border border-gray-800 relative"
             >
@@ -92,13 +158,13 @@ export default function DiscoveryScreen() {
 
         {/* Buy/Rent Toggle */}
         <View className="flex-row mt-6 bg-[#0a0a0a] border border-gray-800 p-1 rounded-2xl">
-           <TouchableOpacity 
+           <TouchableOpacity
              onPress={() => { setShopMode('BUY'); setSelectedCategory(null); }}
              className={`flex-1 py-3 rounded-xl items-center ${shopMode === 'BUY' ? 'bg-[#FF8C42]' : ''}`}
            >
              <Text className={`font-semibold ${shopMode === 'BUY' ? 'text-black' : 'text-gray-500'}`}>Mua thiết bị</Text>
            </TouchableOpacity>
-           <TouchableOpacity 
+           <TouchableOpacity
              onPress={() => { setShopMode('RENT'); setSelectedCategory(null); }}
              className={`flex-1 py-3 rounded-xl items-center ${shopMode === 'RENT' ? 'bg-[#FF8C42]' : ''}`}
            >
@@ -116,14 +182,14 @@ export default function DiscoveryScreen() {
           >
             <Text className={`text-sm ${selectedCategory === null ? 'text-black font-bold' : 'text-white'}`}>All</Text>
           </TouchableOpacity>
-          
-          {CATEGORIES.filter(c => c.type === (shopMode === 'BUY' ? 'PRODUCT' : 'ASSET')).map((category) => (
+
+          {categories.map((category) => (
             <TouchableOpacity
               key={category.categoryId}
-              onPress={() => setSelectedCategory(category.categoryId)}
-              className={`px-5 py-3 mr-3 rounded-full flex-row transition-colors ${selectedCategory === category.categoryId ? 'bg-[#FF8C42]' : 'bg-[#0a0a0a] border border-gray-800'}`}
+              onPress={() => setSelectedCategory(category.categoryName)}
+              className={`px-5 py-3 mr-3 rounded-full flex-row transition-colors ${selectedCategory === category.categoryName ? 'bg-[#FF8C42]' : 'bg-[#0a0a0a] border border-gray-800'}`}
             >
-              <Text className={`text-sm ${selectedCategory === category.categoryId ? 'text-black font-bold' : 'text-white'}`}>
+              <Text className={`text-sm ${selectedCategory === category.categoryName ? 'text-black font-bold' : 'text-white'}`}>
                 {category.categoryName}
               </Text>
             </TouchableOpacity>
@@ -139,7 +205,7 @@ export default function DiscoveryScreen() {
             <Text className="text-2xl mb-2 tracking-tight text-white font-bold">Summer Sale</Text>
             <Text className="text-sm opacity-90 mb-4 text-white">Up to 30% off on selected items</Text>
             <TouchableOpacity onPress={() => router.push('/store' as any)} className="bg-black px-6 py-3 rounded-full self-start">
-              <Text className="text-white text-sm font-semibold">Shop Now</Text>
+              <Text className="text-white text-sm font-bold">Shop Now</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -157,28 +223,28 @@ export default function DiscoveryScreen() {
           {filteredItems.map((item) => {
             const isFaved = favorites.includes(item.id);
             return (
-              <TouchableOpacity 
-                key={item.id} 
+              <TouchableOpacity
+                key={item.id}
                 onPress={() => router.push(`/equipment/${item.id}` as any)}
-                className="block bg-[#0a0a0a] rounded-3xl overflow-hidden border border-gray-800 mb-4 transition-all"
+                className="block bg-[#0a0a0a] rounded-3xl overflow-hidden border border-gray-800 mb-4"
               >
                 <View className="relative aspect-[4/3] w-full bg-gray-900">
                   <Image
-                    source={{ uri: getPrimaryImage(item.id, item.type) }}
+                    source={{ uri: item.primaryImageUrl }}
                     className="w-full h-full"
                     resizeMode="cover"
                   />
                   <View className="absolute top-4 right-4 bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
                     <Text className="text-white text-xs font-medium">{item.type}</Text>
                   </View>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={(e) => {
-                        e.stopPropagation();
-                        if(!user) {
-                           router.push('/(auth)/login' as any);
-                           return;
-                        }
-                        toggleFavorite(item.id);
+                      e.stopPropagation();
+                      if(!user) {
+                         router.push('/(auth)/login' as any);
+                         return;
+                      }
+                      handleToggleFavorite(item.id);
                     }}
                     className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center border ${isFaved ? 'bg-[#FF8C42] border-[#FF8C42]' : 'bg-black/40 border-white/20'}`}
                   >
@@ -199,6 +265,12 @@ export default function DiscoveryScreen() {
             );
           })}
         </View>
+
+        {filteredItems.length === 0 && (
+          <View className="items-center py-12">
+            <Text className="text-gray-500">No items found</Text>
+          </View>
+        )}
       </View>
 
       {/* Rental Section */}
@@ -215,7 +287,7 @@ export default function DiscoveryScreen() {
             Rent professional equipment starting from ₫400,000/day
           </Text>
           <TouchableOpacity onPress={() => router.push('/rentals' as any)} className="w-full py-4 bg-white rounded-full items-center justify-center">
-            <Text className="text-black text-sm font-semibold">Browse Rentals</Text>
+            <Text className="text-black text-sm font-bold">Browse Rentals</Text>
           </TouchableOpacity>
         </View>
       </View>
