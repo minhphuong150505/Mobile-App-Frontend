@@ -119,4 +119,21 @@ export const notificationApi = {
     const data = await handleResponse(response);
     return data.data as Notification;
   },
+
+  /**
+   * Get system/broadcast notifications (public, no auth required)
+   */
+  getSystemNotifications: async (): Promise<Notification[]> => {
+    try {
+      const response = await fetch(`${BASE_URL}/notifications/system`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await handleResponse(response);
+      return (data.data as Notification[]) || [];
+    } catch {
+      // System notifications are best-effort, don't throw
+      return [];
+    }
+  },
 };
