@@ -73,12 +73,12 @@ export default function TransactionsScreen() {
   if (!user) {
     return (
       <View className="flex-1 bg-[#1a1a1a] items-center justify-center p-6">
-        <Text className="text-white text-lg mb-4">Please login to view transactions</Text>
+        <Text className="text-white text-lg mb-4">Vui lòng đăng nhập để xem giao dịch</Text>
         <TouchableOpacity
           onPress={() => router.push('/(auth)/login' as any)}
           className="bg-[#FF8C42] px-6 py-3 rounded-full"
         >
-          <Text className="text-black font-bold">Login</Text>
+          <Text className="text-black font-bold">Đăng nhập</Text>
         </TouchableOpacity>
       </View>
     );
@@ -96,7 +96,7 @@ export default function TransactionsScreen() {
     <View className="flex-1 bg-[#1a1a1a]">
       {/* Header */}
       <View className="px-6 pt-10 pb-4 bg-[#1a1a1a] z-10 w-full">
-        <Text className="text-3xl mb-6 text-white font-bold tracking-tight">TRANSACTIONS</Text>
+        <Text className="text-3xl mb-6 text-white font-bold tracking-tight">GIAO DỊCH</Text>
 
         {/* Tabs */}
         <View className="flex-row gap-3">
@@ -129,7 +129,7 @@ export default function TransactionsScreen() {
           <View className="space-y-4 pb-8">
             {orders.length === 0 ? (
               <View className="items-center py-12">
-                <Text className="text-gray-400">No orders yet</Text>
+                <Text className="text-gray-400">Chưa có đơn hàng</Text>
               </View>
             ) : (
               orders.map((order) => {
@@ -144,7 +144,7 @@ export default function TransactionsScreen() {
                     <View className="flex-row gap-4 p-4">
                       <View className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-gray-900 border border-gray-800">
                         <Image
-                          source={{ uri: firstItem?.imageUrl || 'https://via.placeholder.com/100' }}
+                          source={{ uri: firstItem?.imageUrl || undefined }}
                           className="w-full h-full"
                           resizeMode="cover"
                         />
@@ -162,11 +162,11 @@ export default function TransactionsScreen() {
                     </View>
                     <View className="px-4 pb-4 mt-2">
                       <View className="flex-row justify-between mb-2">
-                        <Text className="text-gray-500 text-sm">Order Date</Text>
+                        <Text className="text-gray-500 text-sm">Ngày đặt</Text>
                         <Text className="text-gray-300 text-sm">{formatDate(order.orderDate)}</Text>
                       </View>
                       <View className="flex-row justify-between items-end pt-2 border-t border-gray-800">
-                        <Text className="text-gray-500 text-sm">Total</Text>
+                        <Text className="text-gray-500 text-sm">Tổng cộng</Text>
                         <Text className="text-[#FF8C42] text-lg font-bold">₫{order.totalAmount.toLocaleString()}</Text>
                       </View>
                     </View>
@@ -179,7 +179,7 @@ export default function TransactionsScreen() {
           <View className="space-y-4 pb-8">
             {rentals.length === 0 ? (
               <View className="items-center py-12">
-                <Text className="text-gray-400">No rentals yet</Text>
+                <Text className="text-gray-400">Chưa có đơn thuê</Text>
               </View>
             ) : (
               rentals.map((rental) => {
@@ -193,7 +193,7 @@ export default function TransactionsScreen() {
                     <View className="flex-row gap-4 p-4">
                       <View className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-gray-900 border border-gray-800">
                         <Image
-                          source={{ uri: rental.primaryImageUrl || 'https://via.placeholder.com/100' }}
+                          source={{ uri: rental.primaryImageUrl || undefined }}
                           className="w-full h-full"
                           resizeMode="cover"
                         />
@@ -209,7 +209,7 @@ export default function TransactionsScreen() {
                     </View>
                     <View className="px-4 pb-4 mt-2">
                       <View className="flex-row justify-between mb-2">
-                        <Text className="text-gray-500 text-sm">Rental Period</Text>
+                        <Text className="text-gray-500 text-sm">Thời gian thuê</Text>
                         <View className="flex-row items-center">
                           <Calendar size={12} color="#d1d5db" />
                           <Text className="text-gray-300 text-sm ml-1">

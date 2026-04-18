@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert, Linking, Image } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Alert, Linking, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { ArrowLeft, CreditCard, Wallet, Calendar } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { orderApi } from '@/services/api/orderApi';
 import { paymentApi } from '@/services/api/paymentApi';
@@ -32,6 +33,7 @@ interface CheckoutData {
 
 export default function CheckoutScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const { cartItems, clearCart, user, token, loadOrders, loadRentals } = useAuth();
 
@@ -199,10 +201,10 @@ export default function CheckoutScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#1a1a1a]">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#1a1a1a]">
       {/* Header */}
-      <View className="px-6 pt-16 pb-4 flex-row items-center border-b border-gray-800">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
+      <View className="px-6 pb-4 flex-row items-center border-b border-gray-800" style={{ paddingTop: insets.top + 16 }}>
+        <TouchableOpacity onPress={() => router.back()} className="mr-4 w-11 h-11 items-center justify-center">
           <ArrowLeft color="white" size={24} />
         </TouchableOpacity>
         <Text className="text-xl text-white font-bold flex-1">Checkout</Text>
@@ -360,13 +362,14 @@ export default function CheckoutScreen() {
         <TouchableOpacity
           onPress={handlePlaceOrder}
           disabled={isSubmitting}
-          className="w-full bg-[#FF8C42] py-4 rounded-2xl items-center shadow shadow-orange-500/20 disabled:opacity-50"
+          className="w-full bg-[#FF8C42] py-4 rounded-2xl items-center shadow shadow-orange-500/20"
+          style={{ opacity: isSubmitting ? 0.5 : 1 }}
         >
           <Text className="text-black font-bold text-lg">
             {isSubmitting ? 'Placing Order...' : 'Place Order'}
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

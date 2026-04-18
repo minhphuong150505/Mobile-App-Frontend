@@ -30,7 +30,7 @@ export default function DebugNetworkScreen() {
 
   return (
     <View className="flex-1 bg-[#1a1a1a] p-6 pt-16">
-      <TouchableOpacity onPress={() => router.back()} className="mb-8">
+      <TouchableOpacity onPress={() => router.back()} className="mb-8 w-11 h-11 items-center justify-center">
         <ArrowLeft color="white" size={24} />
       </TouchableOpacity>
 

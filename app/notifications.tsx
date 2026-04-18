@@ -16,14 +16,17 @@ export default function NotificationsScreen() {
   const { token, user, isLoading: authLoading } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(!authLoading);
+  const [isLoading, setIsLoading] = useState(true); // Start with true, will be set to false after loading
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   // AUTH GUARD: Redirect to login if not authenticated
   useEffect(() => {
+    console.log('[Notifications] useEffect triggered', { authLoading, token: token ? '***' : null, user: user?.email });
+
     if (!authLoading && !token && !user) {
+      console.log('[Notifications] No auth, redirecting to login');
       // Silently redirect without alert for better UX
       router.replace('/(auth)/login' as any);
       return;
@@ -31,13 +34,32 @@ export default function NotificationsScreen() {
 
     // Only load notifications if we have token and not loading
     if (token && !authLoading) {
+      console.log('[Notifications] Loading notifications...');
       loadNotifications();
+    } else if (!authLoading) {
+      // Auth is loaded, stop the loading spinner
+      setIsLoading(false);
     }
   }, [token, authLoading]);
 
-  const loadNotifications = async (pageNum: number = 0, refresh: boolean = false) => {
-    if (!token) return;
+  // Timeout to force stop loading after 5 seconds
+  useEffect(() => {
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        console.log('[Notifications] Timeout - forcing isLoading to false');
+        setIsLoading(false);
+      }, 5000);
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoading]);
 
+  const loadNotifications = async (pageNum: number = 0, refresh: boolean = false) => {
+    if (!token) {
+      console.log('[Notifications] No token available');
+      return;
+    }
+
+    console.log('[Notifications] Loading notifications with token:', token.substring(0, 20) + '...');
     try {
       if (refresh) {
         setRefreshing(true);
@@ -45,10 +67,12 @@ export default function NotificationsScreen() {
         setIsLoading(true);
       }
 
+      console.log('[Notifications] Fetching from API...');
       const [notificationsData, countData] = await Promise.all([
         notificationApi.getNotifications(token, pageNum, 20),
         notificationApi.getUnreadCount(token),
       ]);
+      console.log('[Notifications] Data loaded:', notificationsData);
 
       if (refresh || pageNum === 0) {
         setNotifications(notificationsData.content);
@@ -60,12 +84,13 @@ export default function NotificationsScreen() {
       setTotalPages(notificationsData.totalPages);
       setPage(notificationsData.page);
     } catch (error: any) {
-      console.error('Failed to load notifications:', error);
+      console.error('[Notifications] Failed to load notifications:', error);
+      console.error('[Notifications] Error details:', error.message, error.stack);
       if (error.message?.includes('Unauthorized')) {
         router.replace('/(auth)/login' as any);
         return;
       }
-      Alert.alert('Error', 'Failed to load notifications');
+      Alert.alert('Error', 'Failed to load notifications: ' + error.message);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -241,7 +266,7 @@ export default function NotificationsScreen() {
     <View className="flex-1 bg-[#1a1a1a]">
       {/* Header */}
       <View className="px-6 pt-16 pb-4 flex-row items-center border-b border-gray-800">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
+        <TouchableOpacity onPress={() => router.back()} className="mr-4 w-11 h-11 items-center justify-center">
           <ArrowLeft color="white" size={24} />
         </TouchableOpacity>
         <View className="flex-1">

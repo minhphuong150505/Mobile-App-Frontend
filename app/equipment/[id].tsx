@@ -249,7 +249,7 @@ export default function EquipmentDetailScreen() {
           <View className="absolute top-12 left-0 right-0 px-4 flex-row justify-between">
             <TouchableOpacity
               onPress={() => router.back()}
-              className="w-10 h-10 bg-black/60 rounded-full flex items-center justify-center border border-white/10"
+              className="w-11 h-11 bg-black/60 rounded-full flex items-center justify-center border border-white/10"
             >
               <ArrowLeft size={20} color="white" />
             </TouchableOpacity>

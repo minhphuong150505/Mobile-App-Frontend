@@ -117,7 +117,7 @@ export default function ProfileScreen() {
                 key={stat.label}
                 className="flex-1 bg-black/20 border border-white/20 rounded-2xl p-4 items-center"
               >
-                <Icon size={20} color="white" className="mb-2" />
+                <Icon size={20} color="white" style={{ marginBottom: 8 }} />
                 <Text className="text-2xl mb-1 text-white font-bold mt-2">{stat.value}</Text>
                 <Text className="text-[10px] opacity-90 uppercase tracking-wide text-white">{stat.label}</Text>
               </View>

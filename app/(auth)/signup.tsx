@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { ArrowLeft } from 'lucide-react-native';
@@ -14,7 +14,7 @@ export default function SignupScreen() {
 
   const handleSignup = async () => {
     if (!userName || !email || !password) {
-      alert('Please fill in all fields');
+      Alert.alert('Thông báo', 'Vui lòng điền đầy đủ thông tin');
       return;
     }
 
@@ -23,16 +23,17 @@ export default function SignupScreen() {
     setIsSubmitting(false);
 
     if (success) {
-      alert('Account created successfully!');
+      Alert.alert('Thành công', 'Tài khoản đã được tạo!');
       router.replace('/(tabs)');
     } else {
-      alert(error || 'Email is already registered');
+      Alert.alert('Lỗi', error || 'Email đã được đăng ký');
     }
   };
 
   return (
-    <View className="flex-1 bg-[#1a1a1a] p-6 pt-16">
-      <TouchableOpacity onPress={() => router.back()} className="mb-8">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#1a1a1a]">
+    <View className="flex-1 p-6 pt-16">
+      <TouchableOpacity onPress={() => router.back()} className="mb-8 w-11 h-11 items-center justify-center">
         <ArrowLeft color="white" size={24} />
       </TouchableOpacity>
 
@@ -68,7 +69,8 @@ export default function SignupScreen() {
         <TouchableOpacity
           onPress={handleSignup}
           disabled={isSubmitting || isLoading}
-          className="bg-[#FF8C42] py-4 rounded-xl items-center disabled:opacity-50"
+          className="bg-[#FF8C42] py-4 rounded-xl items-center"
+          style={{ opacity: isSubmitting || isLoading ? 0.5 : 1 }}
         >
           {isSubmitting || isLoading ? (
             <ActivityIndicator color="black" />
@@ -87,5 +89,6 @@ export default function SignupScreen() {
         </Link>
       </View>
     </View>
+    </KeyboardAvoidingView>
   );
 }

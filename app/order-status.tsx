@@ -63,7 +63,7 @@ export default function OrderStatusScreen() {
           onPress={() => router.replace('/(tabs)/' as any)}
           className="w-full bg-[#FF8C42] py-4 rounded-2xl items-center flex-row justify-center"
         >
-          <Home size={18} color="black" className="mr-2" />
+          <Home size={18} color="black" style={{ marginRight: 8 }} />
           <Text className="text-black font-bold text-sm">Return Home</Text>
         </TouchableOpacity>
       </View>

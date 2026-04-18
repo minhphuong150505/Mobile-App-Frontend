@@ -55,9 +55,15 @@ function RootLayoutNav() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AuthProvider>
         <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false, animation: 'fade' }} />
+          <Stack.Screen name="equipment/[id]" options={{ headerShown: false, animation: 'slide_from_right' }} />
+          <Stack.Screen name="cart" options={{ headerShown: false, animation: 'slide_from_right' }} />
+          <Stack.Screen name="checkout" options={{ headerShown: false, animation: 'slide_from_right' }} />
+          <Stack.Screen name="orders/[id]" options={{ headerShown: false, animation: 'slide_from_right' }} />
+          <Stack.Screen name="payment-success" options={{ headerShown: false, animation: 'fade' }} />
+          <Stack.Screen name="payment-failed" options={{ headerShown: false, animation: 'fade' }} />
         </Stack>
       </AuthProvider>
     </ThemeProvider>

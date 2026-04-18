@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { ArrowLeft, Lock } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
@@ -13,34 +13,38 @@ export default function ChangePasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleChangePassword = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChangePassword = async () => {
     setError('');
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setError('Please fill in all fields');
+      setError('Vui lòng điền đầy đủ thông tin');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('New passwords do not match');
+      setError('Mật khẩu mới không khớp');
       return;
     }
 
-    const success = changePassword(currentPassword, newPassword);
-    
-    if (success) {
-      Alert.alert('Success', 'Your password has been changed successfully.', [
+    setIsSubmitting(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      Alert.alert('Thành công', 'Mật khẩu đã được thay đổi.', [
         { text: 'OK', onPress: () => router.back() }
       ]);
-    } else {
-      setError('Incorrect current password');
+    } catch (e: any) {
+      setError(e.message || 'Mật khẩu hiện tại không đúng');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <View className="flex-1 bg-[#1a1a1a]">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#1a1a1a]">
       <View className="px-6 pt-16 pb-4 flex-row items-center border-b border-gray-800">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
+        <TouchableOpacity onPress={() => router.back()} className="mr-4 w-11 h-11 items-center justify-center">
           <ArrowLeft color="white" size={24} />
         </TouchableOpacity>
         <Text className="text-xl text-white font-bold flex-1">Change Password</Text>
@@ -107,6 +111,6 @@ export default function ChangePasswordScreen() {
           <Text className="text-black font-bold text-lg">Update Password</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

@@ -55,7 +55,7 @@ export default function VerifyEmailScreen() {
     <View className="flex-1 bg-[#1a1a1a]">
       {/* Header */}
       <View className="px-6 pt-16 pb-4 flex-row items-center border-b border-gray-800">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
+        <TouchableOpacity onPress={() => router.back()} className="mr-4 w-11 h-11 items-center justify-center">
           <ArrowLeft color="white" size={24} />
         </TouchableOpacity>
         <Text className="text-xl text-white font-bold flex-1">Verify Email</Text>
@@ -96,7 +96,8 @@ export default function VerifyEmailScreen() {
         <TouchableOpacity
           onPress={handleVerify}
           disabled={isVerifying}
-          className="w-full bg-[#FF8C42] py-4 rounded-2xl items-center mb-4 disabled:opacity-50"
+          className="w-full bg-[#FF8C42] py-4 rounded-2xl items-center mb-4"
+          style={{ opacity: isVerifying ? 0.5 : 1 }}
         >
           {isVerifying ? (
             <ActivityIndicator color="black" />
@@ -109,7 +110,8 @@ export default function VerifyEmailScreen() {
         <TouchableOpacity
           onPress={handleResend}
           disabled={isResending}
-          className="w-full bg-[#0a0a0a] border border-gray-800 py-4 rounded-2xl items-center disabled:opacity-50"
+          className="w-full bg-[#0a0a0a] border border-gray-800 py-4 rounded-2xl items-center"
+          style={{ opacity: isResending ? 0.5 : 1 }}
         >
           {isResending ? (
             <ActivityIndicator color="#FF8C42" />

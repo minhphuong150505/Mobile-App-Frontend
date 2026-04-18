@@ -10,7 +10,7 @@ export default function RentalsScreen() {
   return (
     <View className="flex-1 bg-[#1a1a1a]">
       <View className="px-6 pt-16 pb-4 flex-row items-center border-b border-gray-800">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
+        <TouchableOpacity onPress={() => router.back()} className="mr-4 w-11 h-11 items-center justify-center">
           <ArrowLeft color="white" size={24} />
         </TouchableOpacity>
         <Text className="text-xl text-white font-bold flex-1">Rentals</Text>

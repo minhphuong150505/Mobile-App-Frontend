@@ -96,11 +96,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
         const storedUser = await AsyncStorage.getItem(USER_KEY);
 
+        console.log('[AuthContext] Loading stored auth:', {
+          hasToken: !!storedToken,
+          hasUser: !!storedUser,
+          tokenPrefix: storedToken?.substring(0, 20)
+        });
+
         if (storedToken && storedUser) {
           const userData = JSON.parse(storedUser);
           // Verify token is still valid
           try {
             const currentUser = await authApi.getCurrentUser(storedToken);
+            console.log('[AuthContext] Token verified, user:', currentUser.email);
             setToken(storedToken);
             setUser({
               userId: currentUser.userId,
@@ -115,14 +122,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await loadFavorites();
             await loadOrders();
             await loadRentals();
-          } catch (e) {
+          } catch (e: any) {
+            console.log('[AuthContext] Token invalid, clearing storage:', e.message);
             // Token invalid, clear storage
             await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
           }
+        } else {
+          console.log('[AuthContext] No stored auth found');
         }
       } catch (e) {
-        console.error('Error loading auth:', e);
+        console.error('[AuthContext] Error loading auth:', e);
       } finally {
+        console.log('[AuthContext] Loading complete, setting isLoading=false');
         setIsLoading(false);
       }
     };
@@ -137,8 +148,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await saveAuth(response);
       return true;
     } catch (e: any) {
-      setError(e.message || 'Login failed');
-      return false;
+      const message = e.message || 'Login failed';
+      setError(message);
+      throw new Error(message);
     }
   };
 

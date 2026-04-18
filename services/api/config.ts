@@ -10,39 +10,26 @@
 // 2. Update .env file: EXPO_PUBLIC_API_URL=http://YOUR_IP:8080/api
 // 3. Restart Expo: npx expo start -c (clear cache)
 
-// Note: In Expo SDK 54, process.env may not work directly.
-// The .env file is read at build time. Restart Expo dev server after changes.
-const DEFAULT_URL = 'http://localhost:8080/api';
-
-// Try multiple ways to get the environment variable
-const getEnvUrl = (): string | undefined => {
-  // @ts-ignore - Expo may inject this at runtime
-  if (typeof __DEV__ !== 'undefined' && process.env.EXPO_PUBLIC_API_URL) {
+const getEnvUrl = (): string => {
+  // 1. Try Expo environment variable (injected at build time)
+  // @ts-ignore
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    // @ts-ignore
     return process.env.EXPO_PUBLIC_API_URL;
   }
-  return undefined;
+  // 2. Fallback to localhost (works on iOS Simulator)
+  return 'http://localhost:8080/api';
 };
 
-export const BASE_URL = getEnvUrl() || DEFAULT_URL;
+export const BASE_URL = getEnvUrl();
 
-// Debug log - remove in production
+// Debug log
 if (__DEV__) {
   console.log('[API Config] BASE_URL:', BASE_URL);
-  console.log('[API Config] process.env.EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL);
-}
-
-// Helper to detect if we might have connection issues
-const detectConnectionIssue = (): string | null => {
-  if (BASE_URL.includes('localhost')) {
-    return 'Using localhost - this works on iOS Simulator but NOT on Android Emulator or physical devices. See config.ts for solutions.';
+  // @ts-ignore
+  if (!process.env.EXPO_PUBLIC_API_URL) {
+    console.warn('⚠️ EXPO_PUBLIC_API_URL not set — using localhost. For physical devices, set it in .env');
   }
-  return null;
-};
-
-// Log potential connection issues on module load
-const connectionWarning = detectConnectionIssue();
-if (connectionWarning && __DEV__) {
-  console.warn('⚠️  API Config:', connectionWarning);
 }
 
 export const getHeaders = (token?: string) => {

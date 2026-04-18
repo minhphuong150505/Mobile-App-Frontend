@@ -1,58 +1,49 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
+import { BASE_URL } from '@/services/api/config';
 import { ArrowLeft } from 'lucide-react-native';
 import * as WebBrowser from 'expo-web-browser';
-import Constants from 'expo-constants';
 
-// Get API base URL from environment or use default
-// For OAuth to work, this must be accessible from the device/browser
-const getApiBaseUrl = () => {
-  const envUrl = Constants.expoConfig?.extra?.apiUrl || process.env.EXPO_PUBLIC_API_URL;
-  if (envUrl) {
-    return envUrl.replace('/api', ''); // Remove /api suffix for OAuth URLs
-  }
-  // Default for development
-  return 'http://localhost:8080';
-};
+// Get API base URL for OAuth (remove /api suffix)
+const getApiBaseUrl = () => BASE_URL.replace('/api', '');
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, isLoading, error } = useAuth();
+  const { login, isLoading } = useAuth();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Missing Information', 'Please enter both email and password');
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập email và mật khẩu');
       return;
     }
 
     setIsSubmitting(true);
-    const success = await login(email, password);
-    setIsSubmitting(false);
-
-    if (success) {
+    try {
+      await login(email, password);
       router.replace('/(tabs)');
-    } else {
-      // Show specific error messages
-      let errorMessage = error || 'Invalid email or password';
-      if (error?.includes('localhost')) {
-        errorMessage = 'Cannot connect to server.\n\nIf using Android Emulator, use http://10.0.2.2:8080/api\nIf using physical device, use your computer\'s IP address.';
-      } else if (error?.includes('Unauthorized')) {
-        errorMessage = 'Invalid email or password';
-      } else if (error?.includes('Cannot connect')) {
-        errorMessage = 'Cannot connect to server.\n\nPlease check:\n1. Backend is running on port 8080\n2. API URL is correct in .env file';
+    } catch (e: any) {
+      const errMsg = e.message || 'Đăng nhập thất bại';
+      let errorMessage = errMsg;
+      if (errMsg.includes('localhost') || errMsg.includes('Cannot connect') || errMsg.includes('Network request failed')) {
+        errorMessage = 'Không thể kết nối đến máy chủ.\n\nVui lòng kiểm tra:\n1. Backend đang chạy trên cổng 8080\n2. Địa chỉ IP trong config.ts đúng với máy tính của bạn';
+      } else if (errMsg.includes('Invalid email or password') || errMsg.includes('Unauthorized')) {
+        errorMessage = 'Email hoặc mật khẩu không đúng';
       }
-      Alert.alert('Login Failed', errorMessage);
+      Alert.alert('Đăng nhập thất bại', errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <View className="flex-1 bg-[#1a1a1a] p-6 pt-16">
-      <TouchableOpacity onPress={() => router.back()} className="mb-8">
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#1a1a1a]">
+    <View className="flex-1 p-6 pt-16">
+      <TouchableOpacity onPress={() => router.back()} className="mb-8 w-11 h-11 items-center justify-center">
         <ArrowLeft color="white" size={24} />
       </TouchableOpacity>
 
@@ -81,7 +72,8 @@ export default function LoginScreen() {
         <TouchableOpacity
           onPress={handleLogin}
           disabled={isSubmitting || isLoading}
-          className="bg-[#FF8C42] py-4 rounded-xl items-center disabled:opacity-50"
+          className="bg-[#FF8C42] py-4 rounded-xl items-center"
+          style={{ opacity: isSubmitting || isLoading ? 0.5 : 1 }}
         >
           {isSubmitting || isLoading ? (
             <ActivityIndicator color="black" />
@@ -149,5 +141,6 @@ export default function LoginScreen() {
         <Text className="text-xs text-gray-400">Password: password123</Text>
       </View>
     </View>
+    </KeyboardAvoidingView>
   );
 }

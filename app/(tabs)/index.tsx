@@ -129,7 +129,7 @@ export default function DiscoveryScreen() {
               <ShoppingCart size={20} color="#9ca3af" />
               {cartItemCount > 0 && (
                 <View className="absolute -top-1 -right-1 bg-red-500 w-4 h-4 rounded-full items-center justify-center">
-                  <Text className="text-[10px] text-white font-bold">{cartItemCount}</Text>
+                  <Text className="text-[10px] text-white font-bold">{cartItemCount > 99 ? '99+' : cartItemCount}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -178,7 +178,7 @@ export default function DiscoveryScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-3 overflow-visible pb-2">
           <TouchableOpacity
             onPress={() => setSelectedCategory(null)}
-            className={`px-5 py-3 mr-3 rounded-full flex-row transition-colors ${selectedCategory === null ? 'bg-[#FF8C42]' : 'bg-[#0a0a0a] border border-gray-800'}`}
+            className={`px-5 py-3 mr-3 rounded-full flex-row ${selectedCategory === null ? 'bg-[#FF8C42]' : 'bg-[#0a0a0a] border border-gray-800'}`}
           >
             <Text className={`text-sm ${selectedCategory === null ? 'text-black font-bold' : 'text-white'}`}>All</Text>
           </TouchableOpacity>
@@ -187,7 +187,7 @@ export default function DiscoveryScreen() {
             <TouchableOpacity
               key={category.categoryId}
               onPress={() => setSelectedCategory(category.categoryName)}
-              className={`px-5 py-3 mr-3 rounded-full flex-row transition-colors ${selectedCategory === category.categoryName ? 'bg-[#FF8C42]' : 'bg-[#0a0a0a] border border-gray-800'}`}
+              className={`px-5 py-3 mr-3 rounded-full flex-row ${selectedCategory === category.categoryName ? 'bg-[#FF8C42]' : 'bg-[#0a0a0a] border border-gray-800'}`}
             >
               <Text className={`text-sm ${selectedCategory === category.categoryName ? 'text-black font-bold' : 'text-white'}`}>
                 {category.categoryName}
