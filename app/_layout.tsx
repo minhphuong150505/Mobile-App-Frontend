@@ -64,6 +64,11 @@ function RootLayoutNav() {
           <Stack.Screen name="orders/[id]" options={{ headerShown: false, animation: 'slide_from_right' }} />
           <Stack.Screen name="payment-success" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="payment-failed" options={{ headerShown: false, animation: 'fade' }} />
+          <Stack.Screen name="notifications" options={{ headerShown: false, animation: 'slide_from_right' }} />
+          <Stack.Screen name="rentals" options={{ headerShown: false, animation: 'slide_from_right' }} />
+          <Stack.Screen name="store" options={{ headerShown: false, animation: 'slide_from_right' }} />
+          <Stack.Screen name="order-status" options={{ headerShown: false, animation: 'slide_from_right' }} />
+          <Stack.Screen name="oauth-success" options={{ headerShown: false, animation: 'fade' }} />
         </Stack>
       </AuthProvider>
     </ThemeProvider>

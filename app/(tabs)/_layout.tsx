@@ -25,7 +25,7 @@ function NotificationsTabIcon({ color }: { color: string }) {
     const loadUnreadCount = async () => {
       try {
         const count = await notificationApi.getUnreadCount(token);
-        setUnreadCount(count);
+        setUnreadCount(typeof count === 'number' ? count : 0);
       } catch (error) {
         console.error('Failed to load unread count:', error);
       }

@@ -1,5 +1,16 @@
 import { BASE_URL, getHeaders, handleResponse } from './config';
 
+const API_TIMEOUT = 15000;
+
+const fetchWithTimeout = (url: string, options: RequestInit, timeout = API_TIMEOUT): Promise<Response> => {
+  return Promise.race([
+    fetch(url, options),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Request timed out')), timeout)
+    ),
+  ]);
+};
+
 export interface Notification {
   notificationId: string;
   userId: string;
@@ -30,109 +41,112 @@ export interface UnreadCountResponse {
   count: number;
 }
 
+const EMPTY_NOTIFICATIONS_RESPONSE: NotificationsResponse = {
+  content: [],
+  page: 0,
+  size: 20,
+  totalElements: 0,
+  totalPages: 0,
+  first: true,
+  last: true,
+};
+
 export const notificationApi = {
-  /**
-   * Get all notifications for current user (paginated)
-   */
   getNotifications: async (token: string, page: number = 0, size: number = 20): Promise<NotificationsResponse> => {
-    const response = await fetch(`${BASE_URL}/notifications?page=${page}&size=${size}`, {
+    const response = await fetchWithTimeout(`${BASE_URL}/notifications?page=${page}&size=${size}`, {
       method: 'GET',
       headers: getHeaders(token),
     });
     const data = await handleResponse(response);
-    return data.data as NotificationsResponse;
+    const result = data?.data;
+    if (!result || typeof result !== 'object') {
+      console.warn('[NotificationApi] getNotifications: invalid data, using empty response. data?.data =', result);
+      return { ...EMPTY_NOTIFICATIONS_RESPONSE, page, size };
+    }
+    const normalized = {
+      content: Array.isArray(result.content) ? result.content : [],
+      page: typeof result.page === 'number' ? result.page : 0,
+      size: typeof result.size === 'number' ? result.size : 20,
+      totalElements: typeof result.totalElements === 'number' ? result.totalElements : 0,
+      totalPages: typeof result.totalPages === 'number' ? result.totalPages : 0,
+      first: result.first ?? true,
+      last: result.last ?? true,
+    };
+    console.log('[NotificationApi] getNotifications: returning', normalized.content.length, 'items');
+    return normalized;
   },
 
-  /**
-   * Get unread notifications
-   */
   getUnreadNotifications: async (token: string): Promise<Notification[]> => {
-    const response = await fetch(`${BASE_URL}/notifications/unread`, {
+    const response = await fetchWithTimeout(`${BASE_URL}/notifications/unread`, {
       method: 'GET',
       headers: getHeaders(token),
     });
     const data = await handleResponse(response);
-    return data.data as Notification[];
+    return Array.isArray(data?.data) ? data.data : [];
   },
 
-  /**
-   * Get unread notification count
-   */
   getUnreadCount: async (token: string): Promise<number> => {
-    const response = await fetch(`${BASE_URL}/notifications/unread/count`, {
+    const response = await fetchWithTimeout(`${BASE_URL}/notifications/unread/count`, {
       method: 'GET',
       headers: getHeaders(token),
     });
     const data = await handleResponse(response);
-    return (data.data as UnreadCountResponse).count;
+    const count = data?.data?.count;
+    console.log('[NotificationApi] getUnreadCount:', count);
+    return typeof count === 'number' ? count : 0;
   },
 
-  /**
-   * Mark a notification as read
-   */
-  markAsRead: async (token: string, notificationId: string): Promise<Notification> => {
-    const response = await fetch(`${BASE_URL}/notifications/${notificationId}/read`, {
+  markAsRead: async (token: string, notificationId: string): Promise<Notification | null> => {
+    const response = await fetchWithTimeout(`${BASE_URL}/notifications/${notificationId}/read`, {
       method: 'POST',
       headers: getHeaders(token),
     });
     const data = await handleResponse(response);
-    return data.data as Notification;
+    return data?.data ?? null;
   },
 
-  /**
-   * Mark all notifications as read
-   */
   markAllAsRead: async (token: string): Promise<number> => {
-    const response = await fetch(`${BASE_URL}/notifications/read-all`, {
+    const response = await fetchWithTimeout(`${BASE_URL}/notifications/read-all`, {
       method: 'POST',
       headers: getHeaders(token),
     });
     const data = await handleResponse(response);
-    return (data.data as { markedCount: number }).markedCount;
+    const markedCount = data?.data?.markedCount;
+    return typeof markedCount === 'number' ? markedCount : 0;
   },
 
-  /**
-   * Delete a notification
-   */
   deleteNotification: async (token: string, notificationId: string): Promise<void> => {
-    const response = await fetch(`${BASE_URL}/notifications/${notificationId}`, {
+    const response = await fetchWithTimeout(`${BASE_URL}/notifications/${notificationId}`, {
       method: 'DELETE',
       headers: getHeaders(token),
     });
     await handleResponse(response);
   },
 
-  /**
-   * Create a test notification (for development)
-   */
   createTestNotification: async (
     token: string,
     type: string,
     title: string,
     message: string
-  ): Promise<Notification> => {
-    const response = await fetch(`${BASE_URL}/notifications/test`, {
+  ): Promise<Notification | null> => {
+    const response = await fetchWithTimeout(`${BASE_URL}/notifications/test`, {
       method: 'POST',
       headers: getHeaders(token),
       body: JSON.stringify({ type, title, message }),
     });
     const data = await handleResponse(response);
-    return data.data as Notification;
+    return data?.data ?? null;
   },
 
-  /**
-   * Get system/broadcast notifications (public, no auth required)
-   */
   getSystemNotifications: async (): Promise<Notification[]> => {
     try {
-      const response = await fetch(`${BASE_URL}/notifications/system`, {
+      const response = await fetchWithTimeout(`${BASE_URL}/notifications/system`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
       const data = await handleResponse(response);
-      return (data.data as Notification[]) || [];
+      return Array.isArray(data?.data) ? data.data : [];
     } catch {
-      // System notifications are best-effort, don't throw
       return [];
     }
   },

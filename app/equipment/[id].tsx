@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
-import { ArrowLeft, Heart, Shield, Plus, Minus, Calendar, Star } from 'lucide-react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator, Alert, Platform, Modal, Dimensions } from 'react-native';
+import { ArrowLeft, Heart, Shield, Plus, Minus, Calendar, Star, X } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { productApi, assetApi, Product, Asset } from '@/services/api/productApi';
@@ -24,6 +24,8 @@ export default function EquipmentDetailScreen() {
   const [endDate, setEndDate] = useState<Date>(new Date(Date.now() + 24 * 60 * 60 * 1000)); // +1 day
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'start' | 'end' | null>(null);
+  const [tempDate, setTempDate] = useState<Date>(new Date());
 
   useEffect(() => {
     loadEquipment();
@@ -168,33 +170,81 @@ export default function EquipmentDetailScreen() {
     });
   };
 
-  const onStartDateChange = (event: any, selectedDate?: Date) => {
+  const openDatePicker = (mode: 'start' | 'end') => {
+    setPickerMode(mode);
+    setTempDate(mode === 'start' ? startDate : endDate);
+    setShowStartPicker(mode === 'start');
+    setShowEndPicker(mode === 'end');
+  };
+
+  const closeDatePicker = () => {
     setShowStartPicker(false);
-    if (selectedDate) {
-      const minDate = new Date();
-      minDate.setHours(0, 0, 0, 0);
-      if (selectedDate < minDate) {
+    setShowEndPicker(false);
+    setPickerMode(null);
+  };
+
+  const confirmDateSelection = () => {
+    if (!pickerMode) return;
+
+    const minDate = new Date();
+    minDate.setHours(0, 0, 0, 0);
+
+    if (pickerMode === 'start') {
+      if (tempDate < minDate) {
         Alert.alert('Invalid Date', 'Cannot select a date in the past');
         return;
       }
-      setStartDate(selectedDate);
+      setStartDate(tempDate);
       // Ensure end date is at least 1 day after start date
-      if (selectedDate >= endDate) {
-        const newEndDate = new Date(selectedDate);
+      if (tempDate >= endDate) {
+        const newEndDate = new Date(tempDate);
         newEndDate.setDate(newEndDate.getDate() + 1);
         setEndDate(newEndDate);
       }
+    } else {
+      if (tempDate <= startDate) {
+        Alert.alert('Invalid Date', 'Return date must be after start date');
+        return;
+      }
+      setEndDate(tempDate);
+    }
+    closeDatePicker();
+  };
+
+  const onStartDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowStartPicker(false);
+      if (selectedDate) {
+        const minDate = new Date();
+        minDate.setHours(0, 0, 0, 0);
+        if (selectedDate < minDate) {
+          Alert.alert('Invalid Date', 'Cannot select a date in the past');
+          return;
+        }
+        setStartDate(selectedDate);
+        if (selectedDate >= endDate) {
+          const newEndDate = new Date(selectedDate);
+          newEndDate.setDate(newEndDate.getDate() + 1);
+          setEndDate(newEndDate);
+        }
+      }
+    } else {
+      if (selectedDate) setTempDate(selectedDate);
     }
   };
 
   const onEndDateChange = (event: any, selectedDate?: Date) => {
-    setShowEndPicker(false);
-    if (selectedDate) {
-      if (selectedDate <= startDate) {
-        Alert.alert('Invalid Date', 'Return date must be after start date');
-        return;
+    if (Platform.OS === 'android') {
+      setShowEndPicker(false);
+      if (selectedDate) {
+        if (selectedDate <= startDate) {
+          Alert.alert('Invalid Date', 'Return date must be after start date');
+          return;
+        }
+        setEndDate(selectedDate);
       }
-      setEndDate(selectedDate);
+    } else {
+      if (selectedDate) setTempDate(selectedDate);
     }
   };
 
@@ -203,6 +253,15 @@ export default function EquipmentDetailScreen() {
       weekday: 'short',
       day: 'numeric',
       month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const formatDatePickerDate = (date: Date) => {
+    return date.toLocaleDateString('vi-VN', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
       year: 'numeric',
     });
   };
@@ -366,43 +425,81 @@ export default function EquipmentDetailScreen() {
               <View className="flex-1">
                 <Text className="text-xs text-gray-400 mb-2">Start Date</Text>
                 <TouchableOpacity
-                  onPress={() => setShowStartPicker(true)}
+                  onPress={() => openDatePicker('start')}
                   className="flex-row items-center bg-[#1a1a1a] border border-gray-800 rounded-2xl px-4 py-3"
                 >
                   <Calendar size={16} color="#FF8C42" />
                   <Text className="text-white ml-2 flex-1">{formatDate(startDate)}</Text>
                 </TouchableOpacity>
-                {showStartPicker && (
-                  <DateTimePicker
-                    value={startDate}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={onStartDateChange}
-                    minimumDate={new Date()}
-                  />
-                )}
               </View>
 
               <View className="flex-1">
                 <Text className="text-xs text-gray-400 mb-2">Return Date</Text>
                 <TouchableOpacity
-                  onPress={() => setShowEndPicker(true)}
+                  onPress={() => openDatePicker('end')}
                   className="flex-row items-center bg-[#1a1a1a] border border-gray-800 rounded-2xl px-4 py-3"
                 >
                   <Calendar size={16} color="#FF8C42" />
                   <Text className="text-white ml-2 flex-1">{formatDate(endDate)}</Text>
                 </TouchableOpacity>
-                {showEndPicker && (
-                  <DateTimePicker
-                    value={endDate}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={onEndDateChange}
-                    minimumDate={new Date(startDate.getTime() + 24 * 60 * 60 * 1000)}
-                  />
-                )}
               </View>
             </View>
+
+            {/* Date Picker Modal for iOS */}
+            <Modal
+              visible={pickerMode !== null}
+              transparent
+              animationType="fade"
+              onRequestClose={closeDatePicker}
+            >
+              <View className="flex-1 justify-end bg-black/60">
+                <View className="bg-[#1a1a1a] rounded-t-3xl border-t border-gray-800 pb-8">
+                  {/* Handle bar */}
+                  <View className="w-full items-center py-4">
+                    <View className="w-12 h-1 bg-gray-700 rounded-full" />
+                  </View>
+
+                  {/* Header */}
+                  <View className="flex-row items-center justify-between px-6 pb-4 border-b border-gray-800">
+                    <Text className="text-lg text-white font-semibold">
+                      {pickerMode === 'start' ? 'Chọn ngày bắt đầu' : 'Chọn ngày trả'}
+                    </Text>
+                    <TouchableOpacity onPress={closeDatePicker} className="p-2">
+                      <X size={24} color="#9ca3af" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Selected date display */}
+                  <View className="px-6 py-4 items-center bg-[#0a0a0a] mx-6 my-4 rounded-2xl border border-gray-800">
+                    <Text className="text-xs text-gray-400 uppercase tracking-wider mb-2">
+                      {pickerMode === 'start' ? 'Start Date' : 'Return Date'}
+                    </Text>
+                    <Text className="text-2xl text-white font-bold">{formatDatePickerDate(tempDate)}</Text>
+                  </View>
+
+                  {/* DateTimePicker */}
+                  <View className="items-center py-4">
+                    <DateTimePicker
+                      value={tempDate}
+                      mode="date"
+                      display="spinner"
+                      onChange={onStartDateChange}
+                      textColor="white"
+                      themeVariant="dark"
+                      minimumDate={pickerMode === 'start' ? new Date() : new Date(startDate.getTime() + 24 * 60 * 60 * 1000)}
+                    />
+                  </View>
+
+                  {/* Confirm button */}
+                  <TouchableOpacity
+                    onPress={confirmDateSelection}
+                    className="mx-6 mt-4 py-4 bg-[#FF8C42] rounded-2xl items-center"
+                  >
+                    <Text className="text-black font-bold text-base">Xác nhận</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
 
             {/* Rental Summary */}
             <View className="bg-[#0a0a0a] border border-gray-800 rounded-2xl p-4 mb-4">

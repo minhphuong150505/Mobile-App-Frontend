@@ -62,7 +62,6 @@ export const handleResponse = async (response: Response) => {
   }
 
   if (!response.ok) {
-    // Handle specific HTTP status codes with user-friendly messages
     if (response.status === 401) {
       throw new Error('Unauthorized - please login again');
     }
@@ -76,6 +75,15 @@ export const handleResponse = async (response: Response) => {
       throw new Error('Server error - please try again later');
     }
     throw new Error(data.message || data.error || `Request failed (${response.status})`);
+  }
+
+  // Check application-level errors (backend returned 200 but success=false)
+  if (data && typeof data.success === 'boolean' && !data.success) {
+    throw new Error(data.message || 'Request failed');
+  }
+
+  if (__DEV__) {
+    console.log(`[API] ${response.url} -> success:`, data?.success, 'hasData:', data?.data != null);
   }
 
   return data;
