@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { ArrowLeft, Package, MapPin, Calendar, Clock, Truck, CheckCircle, XCircle } from 'lucide-react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { ArrowLeft, Package, MapPin, Calendar, Clock, Truck, CheckCircle, XCircle, Phone, CreditCard } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { orderApi, Order } from '@/services/api/orderApi';
@@ -49,106 +49,111 @@ export default function OrderDetailScreen() {
   }
 
   const steps = [
-    { id: 1, title: 'Đã đặt hàng', desc: 'Chúng tôi đã nhận được đơn hàng của bạn', icon: Clock, stepIndex: 0 },
-    { id: 2, title: 'Đang xử lý', desc: 'Sản phẩm đang được đóng gói', icon: Package, stepIndex: 1 },
-    { id: 3, title: 'Đang giao', desc: 'Đơn hàng đang trên đường giao', icon: Truck, stepIndex: 2 },
-    { id: 4, title: 'Đã giao', desc: 'Đơn hàng đã được giao thành công', icon: CheckCircle, stepIndex: 3 },
+    { id: 1, title: 'Đơn hàng đã được đặt', desc: 'Chúng tôi đã nhận được đơn hàng của bạn', time: order.orderDate },
+    { id: 2, title: 'Đơn hàng được xác nhận', desc: 'Đơn hàng của bạn đã được xác nhận', time: new Date(new Date(order.orderDate).getTime() + 30 * 60000).toISOString() },
+    { id: 3, title: 'Đang chuẩn bị hàng', desc: 'Sản phẩm đang được đóng gói', time: new Date(new Date(order.orderDate).getTime() + 4 * 60 * 60000).toISOString() },
+    { id: 4, title: 'Đã giao cho đơn vị vận chuyển', desc: 'Đơn hàng đang trên đường vận chuyển', time: new Date(new Date(order.orderDate).getTime() + 24 * 60 * 60000).toISOString() },
+    { id: 5, title: 'Đang giao hàng', desc: 'Đơn hàng đang được giao đến bạn', time: new Date(new Date(order.orderDate).getTime() + 48 * 60 * 60000).toISOString() },
+    { id: 6, title: 'Đã giao hàng', desc: 'Đơn hàng đã được giao thành công', time: new Date(new Date(order.orderDate).getTime() + 72 * 60 * 60000).toISOString() },
   ];
 
-  const isStepCompleted = (stepIndex: number) => {
-    if (order.status === 'DELIVERED') return true;
-    if (order.status === 'SHIPPED' && stepIndex <= 2) return true;
-    if (order.status === 'CANCELLED') return stepIndex === 0;
-    if (order.status === 'PENDING' && stepIndex <= 0) return true;
-    if (stepIndex === 0) return true;
-    return false;
+  const getCurrentStep = () => {
+    switch (order.status) {
+      case 'DELIVERED': return 5;
+      case 'SHIPPED': return 4;
+      case 'PENDING': return 1;
+      case 'CANCELLED': return -1;
+      default: return 0;
+    }
   };
 
-  const statusColor = order.status === 'DELIVERED' ? 'green' : order.status === 'CANCELLED' ? 'red' : 'yellow';
+  const currentStep = getCurrentStep();
+
+  const formatDateTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return `${date.toLocaleDateString('vi-VN')} ${date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('vi-VN');
+  };
 
   return (
     <View className="flex-1 bg-[#1a1a1a]">
+      {/* Header */}
       <View className="px-6 pt-16 pb-4 flex-row items-center border-b border-gray-800 bg-[#1a1a1a]">
         <TouchableOpacity onPress={() => router.back()} className="mr-4 w-11 h-11 items-center justify-center">
           <ArrowLeft color="white" size={24} />
         </TouchableOpacity>
-        <Text className="text-xl text-white font-bold flex-1">Chi tiết đơn hàng</Text>
+        <View className="flex-1">
+          <Text className="text-xl text-white font-bold">Chi tiết đơn hàng</Text>
+          <Text className="text-sm text-gray-500 mt-0.5">#{order.orderId.slice(0, 8)}</Text>
+        </View>
       </View>
 
-      <ScrollView className="flex-1 p-6">
-        <View className="bg-[#0a0a0a] border border-gray-800 rounded-2xl p-5 mb-4">
-          <View className="flex-row items-center justify-between mb-4 border-b border-gray-800 pb-4">
-            <Text className="text-gray-400 font-medium">Mã đơn hàng</Text>
-            <Text className="text-white font-bold">#{order.orderId.slice(0, 8)}</Text>
-          </View>
-
-          <View className="flex-row items-center justify-between mb-4">
+      <ScrollView className="flex-1 p-6" showsVerticalScrollIndicator={false}>
+        {/* Product Card */}
+        {order.orderItems && order.orderItems.length > 0 && (
+          <View className="bg-[#0a0a0a] border border-gray-800 rounded-2xl p-4 mb-4">
             <View className="flex-row items-center">
-              <Calendar color="#4b5563" size={16} style={{ marginRight: 8 }} />
-              <Text className="text-gray-400 text-sm">Ngày đặt</Text>
+              <View className="w-20 h-20 rounded-xl overflow-hidden bg-gray-900 border border-gray-800">
+                <Image
+                  source={{ uri: order.orderItems[0].imageUrl }}
+                  className="w-full h-full"
+                  resizeMode="cover"
+                />
+              </View>
+              <View className="flex-1 ml-3">
+                <Text className="text-white font-semibold mb-1" numberOfLines={2}>
+                  {order.orderItems[0].productName}
+                </Text>
+                <Text className="text-gray-500 text-xs mb-2">Số lượng: {order.orderItems[0].quantity}</Text>
+                <Text className="text-[#FF8C42] font-bold">₫{order.orderItems[0].priceAtPurchase.toLocaleString()}</Text>
+              </View>
             </View>
-            <Text className="text-white text-sm">{new Date(order.orderDate).toLocaleDateString('vi-VN')}</Text>
           </View>
+        )}
 
-          <View className="flex-row items-center justify-between mb-4">
-            <View className="flex-row items-center">
-              <Package color="#4b5563" size={16} style={{ marginRight: 8 }} />
-              <Text className="text-gray-400 text-sm">Trạng thái</Text>
-            </View>
-            <View className={`px-2 py-1 rounded-full ${statusColor === 'green' ? 'bg-green-500/20' : statusColor === 'red' ? 'bg-red-500/20' : 'bg-yellow-500/20'}`}>
-              <Text className={`text-xs font-bold ${statusColor === 'green' ? 'text-green-500' : statusColor === 'red' ? 'text-red-500' : 'text-yellow-500'}`}>
-                {order.status === 'PENDING' ? 'Chờ xác nhận' : order.status === 'SHIPPED' ? 'Đang giao' : order.status === 'DELIVERED' ? 'Đã giao' : 'Đã hủy'}
-              </Text>
-            </View>
-          </View>
-
-          {order.orderItems && order.orderItems.length > 0 && (
-            <View className="border-t border-gray-800 pt-4 mb-4">
-              <Text className="text-white font-bold mb-3">Sản phẩm</Text>
-              {order.orderItems.map((item, idx) => (
-                <View key={idx} className="flex-row justify-between items-center mb-2">
-                  <Text className="text-gray-300 text-sm flex-1">{item.productName} x{item.quantity}</Text>
-                  <Text className="text-white text-sm">₫{(item.priceAtPurchase * item.quantity).toLocaleString()}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          <View className="flex-row justify-between pt-4 border-t border-gray-800">
-            <Text className="text-white font-bold">Tổng cộng</Text>
-            <Text className="text-[#FF8C42] font-bold text-lg">₫{order.totalAmount.toLocaleString()}</Text>
-          </View>
-        </View>
-
-        <View className="bg-[#0a0a0a] border border-gray-800 rounded-2xl p-5 mb-4">
-          <Text className="text-white font-bold mb-4">Địa chỉ giao hàng</Text>
-          <View className="flex-row items-start">
-            <MapPin color="#FF8C42" size={20} style={{ marginRight: 12 }} />
-            <Text className="text-gray-300 flex-1 leading-relaxed">{order.shippingAddress}</Text>
-          </View>
-        </View>
-
+        {/* Order Timeline */}
         {order.status !== 'CANCELLED' && (
-          <View className="bg-[#0a0a0a] border border-gray-800 rounded-2xl p-5 mb-8">
-            <Text className="text-white font-bold mb-6">Theo dõi giao hàng</Text>
+          <View className="bg-[#0a0a0a] border border-gray-800 rounded-2xl p-5 mb-4">
+            <Text className="text-white font-bold mb-4 text-lg">Trạng thái đơn hàng</Text>
             <View className="space-y-0">
               {steps.map((step, index) => {
-                const Icon = step.icon;
+                const isCompleted = index <= currentStep;
                 const isLast = index === steps.length - 1;
-                const completed = isStepCompleted(step.stepIndex);
 
                 return (
-                  <View key={step.id} className="flex-row items-start relative opacity-100">
+                  <View key={step.id} className="flex-row items-start relative">
+                    {/* Icon */}
+                    <View className={`w-10 h-10 rounded-full items-center justify-center flex-shrink-0 z-10 ${
+                      isCompleted ? 'bg-[#FF8C42]' : 'bg-gray-800'
+                    }`}>
+                      <CheckCircle size={18} color={isCompleted ? 'black' : '#4b5563'} />
+                    </View>
+
+                    {/* Content */}
+                    <View className="ml-4 flex-1 pb-8">
+                      <Text className={`font-semibold ${isCompleted ? 'text-white' : 'text-gray-500'}`}>
+                        {step.title}
+                      </Text>
+                      <Text className={`text-xs mt-0.5 ${isCompleted ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {step.desc}
+                      </Text>
+                      <Text className={`text-xs mt-1 ${isCompleted ? 'text-gray-500' : 'text-gray-700'}`}>
+                        {formatDateTime(step.time)}
+                      </Text>
+                    </View>
+
+                    {/* Connecting Line */}
                     {!isLast && (
-                      <View className={`absolute left-5 top-10 bottom-[-20px] w-0.5 ${completed ? 'bg-[#FF8C42]' : 'bg-gray-800'}`} />
+                      <View
+                        className={`absolute left-5 top-10 w-0.5 ${
+                          isCompleted ? 'bg-[#FF8C42]' : 'bg-gray-800'
+                        }`}
+                        style={{ height: 60 }}
+                      />
                     )}
-                    <View className={`w-10 h-10 rounded-full items-center justify-center z-10 ${completed ? 'bg-[#FF8C42]' : 'bg-gray-800'}`}>
-                      <Icon size={18} color={completed ? 'black' : '#9ca3af'} />
-                    </View>
-                    <View className="ml-4 pb-10 flex-1">
-                      <Text className={`font-bold ${completed ? 'text-white' : 'text-gray-500'}`}>{step.title}</Text>
-                      <Text className={`${completed ? 'text-gray-400' : 'text-gray-600'} text-xs mt-1`}>{step.desc}</Text>
-                    </View>
                   </View>
                 );
               })}
@@ -156,12 +161,70 @@ export default function OrderDetailScreen() {
           </View>
         )}
 
+        {/* Cancelled Status */}
         {order.status === 'CANCELLED' && (
-          <View className="bg-[#0a0a0a] border border-red-500/20 rounded-2xl p-5 mb-8 items-center">
+          <View className="bg-[#0a0a0a] border border-red-500/20 rounded-2xl p-5 mb-4 items-center">
             <XCircle size={40} color="#ef4444" />
             <Text className="text-red-500 font-bold text-lg mt-2">Đơn hàng đã hủy</Text>
           </View>
         )}
+
+        {/* Shipping Info */}
+        <View className="bg-[#0a0a0a] border border-gray-800 rounded-2xl p-5 mb-4">
+          <Text className="text-white font-bold mb-4 text-lg">Thông tin giao hàng</Text>
+          <View className="flex-row items-start mb-4">
+            <MapPin color="#FF8C42" size={20} />
+            <View className="ml-3 flex-1">
+              <Text className="text-white font-semibold">Nguyễn Văn A</Text>
+              <Text className="text-gray-400 text-sm mt-1">0912345678</Text>
+              <Text className="text-gray-400 text-sm mt-1">123 Đường ABC, Phường 1, Quận 1, TP.HCM</Text>
+            </View>
+          </View>
+          <View className="flex-row items-center border-t border-gray-800 pt-4">
+            <Truck color="#9ca3af" size={16} />
+            <View className="ml-3">
+              <Text className="text-white text-sm">Giao hàng tiêu chuẩn</Text>
+              <Text className="text-gray-500 text-xs mt-0.5">Phí vận chuyển: Miễn phí</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Payment Info */}
+        <View className="bg-[#0a0a0a] border border-gray-800 rounded-2xl p-5 mb-4">
+          <Text className="text-white font-bold mb-4 text-lg">Thông tin thanh toán</Text>
+          <View className="flex-row items-center mb-4">
+            <CreditCard color="#9ca3af" size={16} />
+            <View className="ml-3">
+              <Text className="text-white text-sm">Chuyển khoản ngân hàng</Text>
+              <Text className="text-green-500 text-xs mt-0.5 font-semibold">Đã thanh toán</Text>
+            </View>
+          </View>
+
+          <View className="space-y-2 pt-4 border-t border-gray-800">
+            <View className="flex-row justify-between">
+              <Text className="text-gray-400 text-sm">Tạm tính</Text>
+              <Text className="text-white text-sm">₫{order.totalAmount.toLocaleString()}</Text>
+            </View>
+            <View className="flex-row justify-between">
+              <Text className="text-gray-400 text-sm">Phí vận chuyển</Text>
+              <Text className="text-[#FF8C42] text-sm">Miễn phí</Text>
+            </View>
+            <View className="flex-row justify-between items-center pt-3 border-t border-gray-800">
+              <Text className="text-white font-bold text-lg">Tổng cộng</Text>
+              <Text className="text-[#FF8C42] font-bold text-xl">₫{order.totalAmount.toLocaleString()}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Action Buttons */}
+        <View className="pb-8">
+          <TouchableOpacity className="w-full bg-[#FF8C42] py-4 rounded-2xl items-center mb-3">
+            <Text className="text-black font-bold text-lg">Mua lại</Text>
+          </TouchableOpacity>
+          <TouchableOpacity className="w-full bg-[#0a0a0a] border border-gray-800 py-4 rounded-2xl items-center">
+            <Text className="text-white font-semibold text-lg">Liên hệ hỗ trợ</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );

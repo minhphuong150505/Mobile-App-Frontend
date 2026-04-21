@@ -1,19 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs, useNavigation } from 'expo-router';
-import { Pressable, View, Text } from 'react-native';
+import { View, Text } from 'react-native';
+import { Tabs } from 'expo-router';
+import { Compass, Wallet, Bot, Bell, User } from 'lucide-react-native';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuth } from '@/context/AuthContext';
 import { notificationApi } from '@/services/api/notificationApi';
-
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
-  color: string;
-}) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
-}
 
 function NotificationsTabIcon({ color }: { color: string }) {
   const { token } = useAuth();
@@ -40,26 +33,26 @@ function NotificationsTabIcon({ color }: { color: string }) {
 
   return (
     <View style={{ position: 'relative' }}>
-      <FontAwesome name="bell" size={28} color={color} style={{ marginBottom: -3 }} />
+      <Bell size={24} color={color} />
       {unreadCount > 0 && (
         <View
           style={{
             position: 'absolute',
-            right: -6,
+            right: -8,
             top: -4,
             backgroundColor: '#FF8C42',
-            borderRadius: 10,
-            minWidth: 18,
-            height: 18,
+            borderRadius: 8,
+            minWidth: 16,
+            height: 16,
             alignItems: 'center',
             justifyContent: 'center',
-            paddingHorizontal: 4,
+            paddingHorizontal: 3,
           }}
         >
           <Text
             style={{
               color: 'black',
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: 'bold',
             }}
           >
@@ -78,21 +71,41 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: '#FF8C42',
+        tabBarInactiveTintColor: '#6b7280',
+        tabBarStyle: {
+          backgroundColor: '#0a0a0a',
+          borderTopColor: '#1a1a1a',
+          borderTopWidth: 1,
+          paddingTop: 8,
+          paddingBottom: 8,
+          height: 60,
+        },
         headerShown: false,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '500',
+        },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Khám phá',
-          tabBarIcon: ({ color }) => <TabBarIcon name="search" color={color} />,
+          title: 'Discovery',
+          tabBarIcon: ({ color }) => <Compass size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="transactions"
         options={{
           title: 'Giao dịch',
-          tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
+          tabBarIcon: ({ color }) => <Wallet size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="chatbot"
+        options={{
+          title: 'Chatbot',
+          tabBarIcon: ({ color }) => <Bot size={24} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -106,7 +119,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Hồ sơ',
-          tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
+          tabBarIcon: ({ color }) => <User size={24} color={color} />,
         }}
       />
     </Tabs>

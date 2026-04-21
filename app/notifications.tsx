@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert, Image } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import { ArrowLeft, Bell, Check, CheckCheck, Trash2, RefreshCw } from 'lucide-react-native';
+import { ArrowLeft, Bell, Check, CheckCheck, Trash2, RefreshCw, Package, Calendar, TrendingUp, CreditCard, Tag, Truck } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import { notificationApi, Notification } from '@/services/api/notificationApi';
 
@@ -21,7 +21,6 @@ export default function NotificationsScreen() {
   const [totalPages, setTotalPages] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Track which token we last loaded with to avoid duplicate loads
   const lastLoadedTokenRef = useRef<string | null | undefined>(undefined);
 
   const doLoad = useCallback(async (authToken: string | null, pageNum: number = 0, isRefresh: boolean = false) => {
@@ -33,14 +32,14 @@ export default function NotificationsScreen() {
       }
       setError(null);
 
-      // System notifications (public, fail-safe)
+      // System notifications
       let allSystem: Notification[] = [];
       try {
         allSystem = await notificationApi.getSystemNotifications();
       } catch {}
       setSystemNotifications(Array.isArray(allSystem) ? allSystem : []);
 
-      // User notifications (authenticated)
+      // User notifications
       if (authToken) {
         const [notificationsData, countData] = await Promise.all([
           notificationApi.getNotifications(authToken, pageNum, 20),
@@ -66,32 +65,24 @@ export default function NotificationsScreen() {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [token]);
 
-  // SINGLE effect: load on mount AND when token changes
   useEffect(() => {
-    // Only load if this token hasn't been loaded yet
     if (lastLoadedTokenRef.current === token) return;
 
-    // Wait for auth to finish before loading with token
     if (authLoading && token === null) {
-      // Auth still loading, no token yet - load system notifications only
-      console.log('[Notifications] Auth loading - loading system only');
       lastLoadedTokenRef.current = null;
       doLoad(null);
       return;
     }
 
-    console.log('[Notifications] Loading with token:', token ? 'present' : 'null');
     lastLoadedTokenRef.current = token;
     doLoad(token);
   }, [token, authLoading, doLoad]);
 
-  // Safety timeout
   useEffect(() => {
     if (!isLoading) return;
     const timer = setTimeout(() => {
-      console.warn('[Notifications] TIMEOUT - forcing stop');
       setIsLoading(false);
       setRefreshing(false);
       setError(prev => prev || 'Loading timed out');
@@ -145,53 +136,112 @@ export default function NotificationsScreen() {
     }
   };
 
-  const getIcon = (type: Notification['type']) => {
+  const getNotificationIcon = (type: Notification['type']) => {
     switch (type) {
-      case 'ORDER_UPDATE': case 'SHIPPING_UPDATE': return '📦';
-      case 'RENTAL_REMINDER': case 'RENTAL_OVERDUE': return '📅';
-      case 'PAYMENT_SUCCESS': return '✅';
-      case 'PAYMENT_FAILED': return '❌';
-      case 'PROMOTION': return '🎉';
-      default: return '🔔';
+      case 'ORDER_UPDATE':
+        return { icon: Package, bg: 'bg-blue-500/20', color: '#3b82f6' };
+      case 'SHIPPING_UPDATE':
+        return { icon: Truck, bg: 'bg-blue-500/20', color: '#3b82f6' };
+      case 'RENTAL_REMINDER':
+      case 'RENTAL_OVERDUE':
+        return { icon: Calendar, bg: 'bg-orange-500/20', color: '#f97316' };
+      case 'PAYMENT_SUCCESS':
+        return { icon: CreditCard, bg: 'bg-green-500/20', color: '#22c55e' };
+      case 'PAYMENT_FAILED':
+        return { icon: CreditCard, bg: 'bg-red-500/20', color: '#ef4444' };
+      case 'PROMOTION':
+        return { icon: TrendingUp, bg: 'bg-purple-500/20', color: '#a855f7' };
+      case 'SYSTEM':
+        return { icon: Bell, bg: 'bg-gray-500/20', color: '#6b7280' };
+      default:
+        return { icon: Bell, bg: 'bg-gray-500/20', color: '#6b7280' };
     }
   };
 
-  const renderItem = ({ item }: { item: Notification }) => {
+  const getTimeAgo = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString('vi-VN');
+  };
+
+  const renderItem = ({ item }: { item: Notification & { _source?: string } }) => {
     if (!item?.notificationId) return null;
+    const IconComponent = getNotificationIcon(item.type).icon;
+    const iconBg = getNotificationIcon(item.type).bg;
+    const iconColor = getNotificationIcon(item.type).color;
+
     return (
-      <TouchableOpacity onPress={() => handleNavigateToNotification(item)}
-        className={`flex-row items-start px-4 py-3 border-b border-gray-800 ${!item.isRead ? 'bg-[#FF8C42]/5' : ''}`}>
-        <View className="w-10 h-10 rounded-full bg-[#0a0a0a] items-center justify-center mr-3 flex-shrink-0">
-          <Text className="text-xl">{getIcon(item.type)}</Text>
-        </View>
-        <View className="flex-1">
-          <View className="flex-row items-center justify-between mb-1">
-            <Text className={`text-sm flex-1 ${!item.isRead ? 'text-white font-semibold' : 'text-gray-400'}`} numberOfLines={1}>
-              {item.title || 'Notification'}
-            </Text>
-            <Text className="text-xs text-gray-500 ml-2">
-              {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}
-            </Text>
+      <TouchableOpacity
+        onPress={() => handleNavigateToNotification(item)}
+        className={`mx-4 mb-3 p-4 rounded-2xl border ${
+          !item.isRead
+            ? 'bg-[#0a0a0a] border-[#FF8C42]/30'
+            : 'bg-[#0a0a0a] border-gray-800'
+        }`}
+      >
+        <View className="flex-row items-start">
+          {/* Icon */}
+          <View className={`w-12 h-12 rounded-xl ${iconBg} items-center justify-center flex-shrink-0`}>
+            <IconComponent size={24} color={iconColor} />
           </View>
-          <Text className={`text-sm ${!item.isRead ? 'text-gray-200' : 'text-gray-500'}`} numberOfLines={2}>
-            {item.message || ''}
-          </Text>
-          {item.isActionRequired && !item.isRead && (
-            <Text className="text-xs text-[#FF8C42] font-medium mt-2">Action Required</Text>
+
+          {/* Content */}
+          <View className="flex-1 ml-3">
+            <View className="flex-row items-start justify-between mb-1">
+              <View className="flex-1">
+                <Text
+                  className={`text-base ${!item.isRead ? 'text-white font-semibold' : 'text-gray-400'}`}
+                  numberOfLines={1}
+                >
+                  {item.title || 'Notification'}
+                </Text>
+                <Text
+                  className={`text-sm mt-1 ${!item.isRead ? 'text-gray-300' : 'text-gray-500'}`}
+                  numberOfLines={2}
+                >
+                  {item.message || ''}
+                </Text>
+              </View>
+              {!item.isRead && (
+                <View className="w-2 h-2 bg-[#FF8C42] rounded-full ml-2 mt-1" />
+              )}
+            </View>
+
+            <View className="flex-row items-center justify-between mt-2">
+              <Text className="text-xs text-gray-500">
+                {getTimeAgo(item.createdAt)}
+              </Text>
+              {!item.isRead && (
+                <TouchableOpacity
+                  onPress={() => handleMarkAsRead(item.notificationId)}
+                  className="px-3 py-1"
+                >
+                  <Text className="text-[#FF8C42] text-xs font-semibold">Mark as read</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {token && (
+            <TouchableOpacity
+              onPress={() => handleDelete(item.notificationId)}
+              className="p-2 ml-2"
+            >
+              <Trash2 color="#4b5563" size={16} />
+            </TouchableOpacity>
           )}
         </View>
-        {token && (
-          <View className="flex-row items-center ml-2">
-            {!item.isRead && (
-              <TouchableOpacity onPress={() => handleMarkAsRead(item.notificationId)} className="p-2">
-                <Check color="#9ca3af" size={18} />
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity onPress={() => handleDelete(item.notificationId)} className="p-2">
-              <Trash2 color="#6b7280" size={18} />
-            </TouchableOpacity>
-          </View>
-        )}
       </TouchableOpacity>
     );
   };
@@ -217,8 +267,10 @@ export default function NotificationsScreen() {
         <Bell color="#4b5563" size={64} />
         <Text className="text-gray-400 text-lg font-semibold mt-4">Could not load notifications</Text>
         <Text className="text-gray-500 text-sm mt-2 text-center">{error}</Text>
-        <TouchableOpacity onPress={() => { lastLoadedTokenRef.current = undefined; doLoad(token); }}
-          className="mt-4 bg-[#FF8C42] px-6 py-3 rounded-xl flex-row items-center">
+        <TouchableOpacity
+          onPress={() => { lastLoadedTokenRef.current = undefined; doLoad(token); }}
+          className="mt-4 bg-[#FF8C42] px-6 py-3 rounded-xl flex-row items-center"
+        >
           <RefreshCw color="black" size={16} />
           <Text className="text-black font-bold ml-2">Retry</Text>
         </TouchableOpacity>
@@ -228,25 +280,21 @@ export default function NotificationsScreen() {
 
   return (
     <View className="flex-1 bg-[#1a1a1a]">
-      <View className="px-6 pt-16 pb-4 flex-row items-center border-b border-gray-800">
-        {!isInsideTab && (
-          <TouchableOpacity onPress={() => router.back()} className="mr-4 w-11 h-11 items-center justify-center">
-            <ArrowLeft color="white" size={24} />
-          </TouchableOpacity>
-        )}
-        <View className="flex-1">
-          <Text className="text-xl text-white font-bold">Notifications</Text>
-          {unreadCount > 0 && <Text className="text-sm text-[#FF8C42]">{unreadCount} unread</Text>}
+      {/* Header */}
+      <View className="px-6 pt-16 pb-4 bg-[#1a1a1a]">
+        <View className="flex-row items-center justify-between mb-2">
+          <Text className="text-3xl text-white font-bold tracking-tight">NOTIFICATIONS</Text>
+          {unreadCount > 0 && (
+            <View className="bg-[#FF8C42] px-3 py-1 rounded-full">
+              <Text className="text-black text-xs font-bold">{unreadCount} new</Text>
+            </View>
+          )}
         </View>
-        {unreadCount > 0 && (
-          <TouchableOpacity onPress={handleMarkAllAsRead} className="p-2">
-            <CheckCheck color="#FF8C42" size={24} />
-          </TouchableOpacity>
-        )}
+        <Text className="text-sm text-gray-400">Stay updated with your orders and rentals</Text>
       </View>
 
       {error && hasNotifications && (
-        <View className="bg-red-900/30 px-4 py-2 flex-row items-center justify-between">
+        <View className="mx-4 mb-3 bg-red-900/30 px-4 py-2 flex-row items-center justify-between rounded-xl">
           <Text className="text-red-300 text-xs flex-1" numberOfLines={1}>{error}</Text>
           <TouchableOpacity onPress={() => { lastLoadedTokenRef.current = undefined; doLoad(token); }}>
             <RefreshCw color="#fca5a5" size={14} />
@@ -262,8 +310,10 @@ export default function NotificationsScreen() {
             {token ? "When you receive notifications, they'll appear here" : 'Sign in to see your personal notifications'}
           </Text>
           {!token && (
-            <TouchableOpacity onPress={() => router.push('/(auth)/login' as any)}
-              className="mt-4 bg-[#FF8C42] px-6 py-3 rounded-xl">
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/login' as any)}
+              className="mt-4 bg-[#FF8C42] px-6 py-3 rounded-xl"
+            >
               <Text className="text-black font-bold">Sign In</Text>
             </TouchableOpacity>
           )}
@@ -277,7 +327,22 @@ export default function NotificationsScreen() {
           refreshing={refreshing}
           onEndReached={() => { if (token && page < totalPages - 1) doLoad(token, page + 1); }}
           onEndReachedThreshold={0.5}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 20 }}
         />
+      )}
+
+      {/* Mark All as Read Button */}
+      {hasNotifications && unreadCount > 0 && token && (
+        <View className="px-6 pb-6 pt-4 border-t border-gray-800 bg-[#1a1a1a]">
+          <TouchableOpacity
+            onPress={handleMarkAllAsRead}
+            className="w-full py-4 bg-[#0a0a0a] border border-gray-800 rounded-2xl items-center flex-row justify-center"
+          >
+            <CheckCheck color="#FF8C42" size={20} />
+            <Text className="text-white font-semibold ml-2">Mark all as read</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
